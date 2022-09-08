@@ -15,19 +15,39 @@ const {
 	RGBLinkTAO1ProConnector,
 	SRC_HDMI1,
 	SRC_NAMES,
+	PIP_OFF,
+	PIP_MODE_NAMES,
+	PIP_STATUES_NAMES,
+	PIP_ON,
+	PIP_MODE_TOP_LEFT,
 } = require('./rgblink_tao1pro_connector.js')
 
 var DEFAULT_1PRO_PORT = 5560
 
 const ACTION_SWITCH_PREVIEW = 'switch_preview'
 const ACTION_SWITCH_PROGRAM = 'switch_program'
+const ACTION_PIP_OFF = 'pip_off'
+const ACTION_PIP_ON_WITH_MODE = 'pip_on_with_mode'
 
-const FEEDBKACK_PREVIEW_SRC = 'feedback_preview'
-const FEEDBKACK_PROGRAM_SRC = 'feedback_program'
+const FEEDBACK_PREVIEW_SRC = 'feedback_preview'
+const FEEDBACK_PROGRAM_SRC = 'feedback_program'
+const FEEDBACK_PIP_OFF = 'feedback_pip_off'
+const FEEDBACK_PIP_ON_SELECTED_MODE = 'feedback_pip_on_with_mode'
+const FEEDBACK_PIP_ON_ANY_MODE = 'feedback_pip_on_any_mode'
 
 const CHOICES_PART_SOURCES = []
 for (let id in SRC_NAMES) {
 	CHOICES_PART_SOURCES.push({ id: id, label: SRC_NAMES[id] })
+}
+
+const CHOICES_PART_PIP_STATUS = []
+for (let id in PIP_STATUES_NAMES) {
+	CHOICES_PART_PIP_STATUS.push({ id: id, label: PIP_STATUES_NAMES[id] })
+}
+
+const CHOICES_PART_PIP_MODE = []
+for (let id in PIP_MODE_NAMES) {
+	CHOICES_PART_PIP_MODE.push({ id: id, label: PIP_MODE_NAMES[id] })
 }
 
 class instance extends instance_skel {
@@ -150,12 +170,42 @@ class instance extends instance_skel {
 			},
 		}
 
+		actions[ACTION_PIP_OFF] = {
+			label: 'Set PIP OFF ',
+			options: [
+			],
+			callback: (/*action , bank*/) => {
+				this.apiConnector.sendSetPIPStatusAndMode(PIP_OFF)
+			},
+		}
+
+		actions[ACTION_PIP_ON_WITH_MODE] = {
+			label: 'Set PIP ON',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'PIP mode',
+					id: 'pipMode',
+					default: PIP_MODE_TOP_LEFT,
+					tooltip: 'Choose corner for second stream',
+					choices: CHOICES_PART_PIP_MODE,
+					minChoicesForSearch: 0,
+				},
+			],
+			callback: (action /*, bank*/) => {
+				this.apiConnector.sendSetPIPStatusAndMode(PIP_ON, action.options.pipMode)
+			},
+		}
+
 		this.setActions(actions)
 	}
 
 	checkAllFeedbacks() {
-		this.checkFeedbacks(FEEDBKACK_PREVIEW_SRC)
-		this.checkFeedbacks(FEEDBKACK_PROGRAM_SRC)
+		this.checkFeedbacks(FEEDBACK_PREVIEW_SRC)
+		this.checkFeedbacks(FEEDBACK_PROGRAM_SRC)
+		this.checkFeedbacks(FEEDBACK_PIP_OFF)
+		this.checkFeedbacks(FEEDBACK_PIP_ON_SELECTED_MODE)
+		this.checkFeedbacks(FEEDBACK_PIP_ON_ANY_MODE)
 	}
 
 	updateConfig(config) {
@@ -176,10 +226,16 @@ class instance extends instance_skel {
 	}
 
 	feedback(feedback /*, bank*/) {
-		if (feedback.type == FEEDBKACK_PREVIEW_SRC) {
+		if (feedback.type == FEEDBACK_PREVIEW_SRC) {
 			return feedback.options.source == this.apiConnector.deviceStatus.previewSourceMainChannel
-		} else if (feedback.type == FEEDBKACK_PROGRAM_SRC) {
+		} else if (feedback.type == FEEDBACK_PROGRAM_SRC) {
 			return feedback.options.source == this.apiConnector.deviceStatus.programSourceMainChannel
+		} else if (feedback.type == FEEDBACK_PIP_OFF) {
+			return this.apiConnector.deviceStatus.pipStatus == PIP_OFF
+		} else if (feedback.type == FEEDBACK_PIP_ON_ANY_MODE) {
+			return this.apiConnector.deviceStatus.pipStatus == PIP_ON
+		} else if (feedback.type == FEEDBACK_PIP_ON_SELECTED_MODE) {
+			return (this.apiConnector.deviceStatus.pipStatus == PIP_ON && feedback.options.pipMode == this.apiConnector.deviceStatus.pipMode)
 		}
 
 		return false
@@ -188,7 +244,7 @@ class instance extends instance_skel {
 	initFeedbacks() {
 		const feedbacks = {}
 
-		feedbacks[FEEDBKACK_PREVIEW_SRC] = {
+		feedbacks[FEEDBACK_PREVIEW_SRC] = {
 			type: 'boolean',
 			label: 'Selected source on preview',
 			description: 'Feedback, if selected source is used on preview',
@@ -209,7 +265,7 @@ class instance extends instance_skel {
 			],
 		}
 
-		feedbacks[FEEDBKACK_PROGRAM_SRC] = {
+		feedbacks[FEEDBACK_PROGRAM_SRC] = {
 			type: 'boolean',
 			label: 'Selected source on program',
 			description: 'Feedback, if selected source is used on program',
@@ -225,6 +281,51 @@ class instance extends instance_skel {
 					default: SRC_HDMI1,
 					tooltip: 'Choose input source signal',
 					choices: CHOICES_PART_SOURCES,
+					minChoicesForSearch: 0,
+				},
+			],
+		}
+
+		feedbacks[FEEDBACK_PIP_OFF] = {
+			type: 'boolean',
+			label: 'PIP is OFF',
+			description: 'Feedback, if PIP is OFF',
+			style: {
+				color: this.rgb(255, 255, 255),
+				bgcolor: this.BACKGROUND_COLOR_RED,
+			},
+			options: [
+			],
+		}
+
+		feedbacks[FEEDBACK_PIP_ON_ANY_MODE] = {
+			type: 'boolean',
+			label: 'PIP is ON, in any mode',
+			description: 'Feedback, if PIP is ON, in any PIP mode',
+			style: {
+				color: this.rgb(255, 255, 255),
+				bgcolor: this.BACKGROUND_COLOR_RED,
+			},
+			options: [
+			],
+		}
+
+		feedbacks[FEEDBACK_PIP_ON_SELECTED_MODE] = {
+			type: 'boolean',
+			label: 'PIP is ON, with selected mode',
+			description: 'Feedback, if PIP is ON and selected PIP mode is used',
+			style: {
+				color: this.rgb(255, 255, 255),
+				bgcolor: this.BACKGROUND_COLOR_RED,
+			},
+			options: [
+				{
+					type: 'dropdown',
+					label: 'PIP mode',
+					id: 'pipMode',
+					default: PIP_MODE_TOP_LEFT,
+					tooltip: 'Choose corner for second stream',
+					choices: CHOICES_PART_PIP_MODE,
 					minChoicesForSearch: 0,
 				},
 			],
@@ -256,7 +357,7 @@ class instance extends instance_skel {
 				],
 				feedbacks: [
 					{
-						type: FEEDBKACK_PREVIEW_SRC,
+						type: FEEDBACK_PREVIEW_SRC,
 						options: {
 							source: id,
 						},
@@ -289,7 +390,7 @@ class instance extends instance_skel {
 				],
 				feedbacks: [
 					{
-						type: FEEDBKACK_PROGRAM_SRC,
+						type: FEEDBACK_PROGRAM_SRC,
 						options: {
 							source: id,
 						},
@@ -302,6 +403,85 @@ class instance extends instance_skel {
 			})
 
 		}
+
+		presets.push({
+			category: 'PIP',
+			bank: {
+				style: 'text',
+				text: 'PIP OFF',
+				size: 'auto',
+				color: this.TEXT_COLOR,
+				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
+			},
+			actions: [
+				{
+					action: ACTION_PIP_OFF,
+				},
+			],
+			feedbacks: [
+				{
+					type: FEEDBACK_PIP_OFF,
+					style: {
+						color: this.TEXT_COLOR,
+						bgcolor: this.BACKGROUND_COLOR_RED,
+					},
+				},
+			],
+		})
+		for (let id in PIP_MODE_NAMES) {
+			presets.push({
+				category: 'PIP',
+				bank: {
+					style: 'text',
+					text: 'PIP ON\\n' + PIP_MODE_NAMES[id],
+					size: 'auto',
+					color: this.TEXT_COLOR,
+					bgcolor: this.BACKGROUND_COLOR_DEFAULT,
+				},
+				actions: [
+					{
+						action: ACTION_PIP_ON_WITH_MODE,
+						options: {
+							pipMode: id,
+						},
+					},
+				],
+				feedbacks: [
+					{
+						type: FEEDBACK_PIP_ON_SELECTED_MODE,
+						options: {
+							pipMode: id,
+						},
+						style: {
+							color: this.TEXT_COLOR,
+							bgcolor: this.BACKGROUND_COLOR_RED,
+						},
+					},
+				],
+			})
+
+		}
+		presets.push({
+			category: 'PIP',
+			bank: {
+				style: 'text',
+				text: 'is PIP ON?',
+				size: 'auto',
+				color: this.TEXT_COLOR,
+				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
+			},
+			actions: [
+			],
+			feedbacks: [
+				{
+					type: FEEDBACK_PIP_ON_ANY_MODE,
+					style: {
+						color: this.TEXT_COLOR,
+						bgcolor: this.BACKGROUND_COLOR_RED,
+					},
+				},
+			],
+		})
 
 		this.setPresetDefinitions(presets)
 	}
