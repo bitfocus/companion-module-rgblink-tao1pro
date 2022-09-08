@@ -26,7 +26,6 @@ PIP_MODE_NAMES[PIP_MODE_TOP_RIGHT] = 'top right'
 PIP_MODE_NAMES[PIP_MODE_BOTTOM_LEFT] = 'bottom left'
 PIP_MODE_NAMES[PIP_MODE_BOTTOM_RIGHT] = 'bottom right'
 
-
 class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 	EVENT_NAME_ON_DEVICE_STATE_CHANGED = 'on_device_state_changed'
 
@@ -42,8 +41,8 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		super(host, port, debug, polling)
 		var self = this
 
-		this.on(this.EVENT_NAME_ON_DATA_API_NOT_STANDARD_LENGTH, (message/*, metadata*/) => {
-			this.debug("Not standard data:" + message)
+		this.on(this.EVENT_NAME_ON_DATA_API_NOT_STANDARD_LENGTH, (message /*, metadata*/) => {
+			this.debug('Not standard data:' + message)
 			// if (metadata.size == 22) {
 			// 	self.consume22(message)
 			// 	this.emit(this.EVENT_NAME_ON_DEVICE_STATE_CHANGED, [])
@@ -101,11 +100,16 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 	}
 
 	isValidSource(src) {
-		return (src >= 0 && src <= 3)
+		return src >= 0 && src <= 3
 	}
 
 	isValidPipMode(pipMode) {
-		return (pipMode == PIP_MODE_TOP_LEFT || pipMode == PIP_MODE_TOP_RIGHT || pipMode == PIP_MODE_BOTTOM_LEFT || pipMode == PIP_MODE_BOTTOM_RIGHT)
+		return (
+			pipMode == PIP_MODE_TOP_LEFT ||
+			pipMode == PIP_MODE_TOP_RIGHT ||
+			pipMode == PIP_MODE_BOTTOM_LEFT ||
+			pipMode == PIP_MODE_BOTTOM_RIGHT
+		)
 	}
 
 	consumeFeedback(ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4) {
@@ -147,7 +151,10 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 				if (src >= 0 && src <= 3) {
 					this.emitConnectionStatusOK()
 					this.deviceStatus.previewSourceMainChannel = src
-					return this.logFeedback(redeableMsg, 'Switch over the preview screen to input source ' + SRC_NAMES[this.deviceStatus.previewSourceMainChannel])
+					return this.logFeedback(
+						redeableMsg,
+						'Switch over the preview screen to input source ' + SRC_NAMES[this.deviceStatus.previewSourceMainChannel]
+					)
 				}
 			} else if (DAT1 == '01') {
 				// 3.2.19 Switch over the pgm screen input source
@@ -155,7 +162,10 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 				if (src >= 0 && src <= 3) {
 					this.emitConnectionStatusOK()
 					this.deviceStatus.programSourceMainChannel = src
-					return this.logFeedback(redeableMsg, 'Switch over the program screen to input source ' + SRC_NAMES[this.deviceStatus.programSourceMainChannel])
+					return this.logFeedback(
+						redeableMsg,
+						'Switch over the program screen to input source ' + SRC_NAMES[this.deviceStatus.programSourceMainChannel]
+					)
 				}
 			} else if (DAT1 == '02') {
 				// 3.2.20
@@ -164,13 +174,22 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 					this.emitConnectionStatusOK()
 					this.deviceStatus.pipStatus = mode
 					this.deviceStatus.programSourceMainChannel = parseInt(DAT3)
-					return this.logFeedback(redeableMsg, 'PIP is OFF, with main channel ' + SRC_NAMES[this.deviceStatus.programSourceMainChannel])
+					return this.logFeedback(
+						redeableMsg,
+						'PIP is OFF, with main channel ' + SRC_NAMES[this.deviceStatus.programSourceMainChannel]
+					)
 				} else if (mode == PIP_ON) {
 					this.emitConnectionStatusOK()
 					this.deviceStatus.pipStatus = mode
 					this.deviceStatus.programSourceMainChannel = parseInt(DAT3)
 					this.deviceStatus.programSourceSubChannel = parseInt(DAT3)
-					return this.logFeedback(redeableMsg, 'PIP is ON, with main channel ' + SRC_NAMES[this.deviceStatus.programSourceMainChannel] + ' and sub-channel ' + SRC_NAMES[this.deviceStatus.programSourceSubChannel])
+					return this.logFeedback(
+						redeableMsg,
+						'PIP is ON, with main channel ' +
+							SRC_NAMES[this.deviceStatus.programSourceMainChannel] +
+							' and sub-channel ' +
+							SRC_NAMES[this.deviceStatus.programSourceSubChannel]
+					)
 				}
 			}
 		}

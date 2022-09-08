@@ -113,7 +113,12 @@ class instance extends instance_skel {
 
 	initApiConnector() {
 		let self = this
-		this.apiConnector = new RGBLinkTAO1ProConnector(this.config.host, DEFAULT_1PRO_PORT, this.debug, this.config.polling)
+		this.apiConnector = new RGBLinkTAO1ProConnector(
+			this.config.host,
+			DEFAULT_1PRO_PORT,
+			this.debug,
+			this.config.polling
+		)
 		this.apiConnector.on(this.apiConnector.EVENT_NAME_ON_DEVICE_STATE_CHANGED, () => {
 			self.checkAllFeedbacks()
 		})
@@ -172,8 +177,7 @@ class instance extends instance_skel {
 
 		actions[ACTION_PIP_OFF] = {
 			label: 'Set PIP OFF ',
-			options: [
-			],
+			options: [],
 			callback: (/*action , bank*/) => {
 				this.apiConnector.sendSetPIPStatusAndMode(PIP_OFF)
 			},
@@ -235,7 +239,10 @@ class instance extends instance_skel {
 		} else if (feedback.type == FEEDBACK_PIP_ON_ANY_MODE) {
 			return this.apiConnector.deviceStatus.pipStatus == PIP_ON
 		} else if (feedback.type == FEEDBACK_PIP_ON_SELECTED_MODE) {
-			return (this.apiConnector.deviceStatus.pipStatus == PIP_ON && feedback.options.pipMode == this.apiConnector.deviceStatus.pipMode)
+			return (
+				this.apiConnector.deviceStatus.pipStatus == PIP_ON &&
+				feedback.options.pipMode == this.apiConnector.deviceStatus.pipMode
+			)
 		}
 
 		return false
@@ -294,8 +301,7 @@ class instance extends instance_skel {
 				color: this.rgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_RED,
 			},
-			options: [
-			],
+			options: [],
 		}
 
 		feedbacks[FEEDBACK_PIP_ON_ANY_MODE] = {
@@ -306,8 +312,7 @@ class instance extends instance_skel {
 				color: this.rgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_RED,
 			},
-			options: [
-			],
+			options: [],
 		}
 
 		feedbacks[FEEDBACK_PIP_ON_SELECTED_MODE] = {
@@ -401,7 +406,6 @@ class instance extends instance_skel {
 					},
 				],
 			})
-
 		}
 
 		presets.push({
@@ -459,7 +463,6 @@ class instance extends instance_skel {
 					},
 				],
 			})
-
 		}
 		presets.push({
 			category: 'PIP',
@@ -470,8 +473,7 @@ class instance extends instance_skel {
 				color: this.TEXT_COLOR,
 				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
 			},
-			actions: [
-			],
+			actions: [],
 			feedbacks: [
 				{
 					type: FEEDBACK_PIP_ON_ANY_MODE,
