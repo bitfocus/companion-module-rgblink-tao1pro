@@ -20,6 +20,12 @@ const {
 	PIP_STATUES_NAMES,
 	PIP_ON,
 	PIP_MODE_TOP_LEFT,
+	DIAGRAM_VISIBILITY_OFF,
+	DIAGRAM_TYPE_HISTOGRAM,
+	DIAGRAM_POSITION_MIDDLE_DEFAULT,
+	DIAGRAM_TYPE_NAMES,
+	DIAGRAM_POSITION_NAMES,
+	DIAGRAM_VISIBILITY_OPEN,
 } = require('./rgblink_tao1pro_connector.js')
 
 var DEFAULT_1PRO_PORT = 5560
@@ -28,12 +34,16 @@ const ACTION_SWITCH_PREVIEW = 'switch_preview'
 const ACTION_SWITCH_PROGRAM = 'switch_program'
 const ACTION_PIP_OFF = 'pip_off'
 const ACTION_PIP_ON_WITH_MODE = 'pip_on_with_mode'
+const ACTION_DIAGRAM_HIDE = 'diagram_hide'
+const ACTION_DIAGRAM_SHOW = 'diagram_show'
 
 const FEEDBACK_PREVIEW_SRC = 'feedback_preview'
 const FEEDBACK_PROGRAM_SRC = 'feedback_program'
 const FEEDBACK_PIP_OFF = 'feedback_pip_off'
 const FEEDBACK_PIP_ON_SELECTED_MODE = 'feedback_pip_on_with_mode'
 const FEEDBACK_PIP_ON_ANY_MODE = 'feedback_pip_on_any_mode'
+const FEEDBACK_DIAGRAM_HIDDEN = 'feedback_diagram_hidden'
+const FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS = 'feedback_diagram_visible_with_settings'
 
 const CHOICES_PART_SOURCES = []
 for (let id in SRC_NAMES) {
@@ -48,6 +58,16 @@ for (let id in PIP_STATUES_NAMES) {
 const CHOICES_PART_PIP_MODE = []
 for (let id in PIP_MODE_NAMES) {
 	CHOICES_PART_PIP_MODE.push({ id: id, label: PIP_MODE_NAMES[id] })
+}
+
+const CHOICES_PART_DIAGRAM_TYPE = []
+for (let id in DIAGRAM_TYPE_NAMES) {
+	CHOICES_PART_DIAGRAM_TYPE.push({ id: id, label: DIAGRAM_TYPE_NAMES[id] })
+}
+
+const CHOICES_PART_DIAGRAM_POSITION = []
+for (let id in DIAGRAM_POSITION_NAMES) {
+	CHOICES_PART_DIAGRAM_POSITION.push({ id: id, label: DIAGRAM_POSITION_NAMES[id] })
 }
 
 class instance extends instance_skel {
@@ -201,6 +221,45 @@ class instance extends instance_skel {
 			},
 		}
 
+		actions[ACTION_DIAGRAM_HIDE] = {
+			label: 'Close diagram',
+			options: [],
+			callback: (/*action , bank*/) => {
+				this.apiConnector.sendSetDiagramState(
+					DIAGRAM_VISIBILITY_OFF,
+					DIAGRAM_TYPE_HISTOGRAM,
+					DIAGRAM_POSITION_MIDDLE_DEFAULT
+				)
+			},
+		}
+
+		actions[ACTION_DIAGRAM_SHOW] = {
+			label: 'Show diagram',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Diagram type',
+					id: 'type',
+					default: DIAGRAM_TYPE_HISTOGRAM,
+					tooltip: 'Choose diagram type',
+					choices: CHOICES_PART_DIAGRAM_TYPE,
+					minChoicesForSearch: 0,
+				},
+				{
+					type: 'dropdown',
+					label: 'Diagram position',
+					id: 'position',
+					default: DIAGRAM_POSITION_MIDDLE_DEFAULT,
+					tooltip: 'Choose diagram position',
+					choices: CHOICES_PART_DIAGRAM_POSITION,
+					minChoicesForSearch: 0,
+				},
+			],
+			callback: (action /* , bank*/) => {
+				this.apiConnector.sendSetDiagramState(DIAGRAM_VISIBILITY_OPEN, action.options.type, action.options.position)
+			},
+		}
+
 		this.setActions(actions)
 	}
 
@@ -210,6 +269,8 @@ class instance extends instance_skel {
 		this.checkFeedbacks(FEEDBACK_PIP_OFF)
 		this.checkFeedbacks(FEEDBACK_PIP_ON_SELECTED_MODE)
 		this.checkFeedbacks(FEEDBACK_PIP_ON_ANY_MODE)
+		this.checkFeedbacks(FEEDBACK_DIAGRAM_HIDDEN)
+		this.checkFeedbacks(FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS)
 	}
 
 	updateConfig(config) {
@@ -230,18 +291,24 @@ class instance extends instance_skel {
 	}
 
 	feedback(feedback /*, bank*/) {
+		let deviceStatus = this.apiConnector.deviceStatus
 		if (feedback.type == FEEDBACK_PREVIEW_SRC) {
-			return feedback.options.source == this.apiConnector.deviceStatus.previewSourceMainChannel
+			return feedback.options.source == deviceStatus.previewSourceMainChannel
 		} else if (feedback.type == FEEDBACK_PROGRAM_SRC) {
-			return feedback.options.source == this.apiConnector.deviceStatus.programSourceMainChannel
+			return feedback.options.source == deviceStatus.programSourceMainChannel
 		} else if (feedback.type == FEEDBACK_PIP_OFF) {
-			return this.apiConnector.deviceStatus.pipStatus == PIP_OFF
+			return deviceStatus.pipStatus == PIP_OFF
 		} else if (feedback.type == FEEDBACK_PIP_ON_ANY_MODE) {
-			return this.apiConnector.deviceStatus.pipStatus == PIP_ON
+			return deviceStatus.pipStatus == PIP_ON
 		} else if (feedback.type == FEEDBACK_PIP_ON_SELECTED_MODE) {
+			return deviceStatus.pipStatus == PIP_ON && feedback.options.pipMode == deviceStatus.pipMode
+		} else if (feedback.type == FEEDBACK_DIAGRAM_HIDDEN) {
+			return deviceStatus.diagram.visibility == DIAGRAM_VISIBILITY_OFF
+		} else if (feedback.type == FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS) {
 			return (
-				this.apiConnector.deviceStatus.pipStatus == PIP_ON &&
-				feedback.options.pipMode == this.apiConnector.deviceStatus.pipMode
+				deviceStatus.diagram.visibility == DIAGRAM_VISIBILITY_OPEN &&
+				feedback.options.type == deviceStatus.diagram.type &&
+				feedback.options.position == deviceStatus.diagram.position
 			)
 		}
 
@@ -331,6 +398,47 @@ class instance extends instance_skel {
 					default: PIP_MODE_TOP_LEFT,
 					tooltip: 'Choose corner for second stream',
 					choices: CHOICES_PART_PIP_MODE,
+					minChoicesForSearch: 0,
+				},
+			],
+		}
+
+		feedbacks[FEEDBACK_DIAGRAM_HIDDEN] = {
+			type: 'boolean',
+			label: 'Diagram is closed (invisible)',
+			description: 'Feedback, diagram is closed',
+			style: {
+				color: this.rgb(255, 255, 255),
+				bgcolor: this.BACKGROUND_COLOR_RED,
+			},
+			options: [],
+		}
+
+		feedbacks[FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS] = {
+			type: 'boolean',
+			label: 'Diagram is visible, with specific settings',
+			description: 'Feedback, if diagram is visible, with specific diagram type and diagram position',
+			style: {
+				color: this.rgb(255, 255, 255),
+				bgcolor: this.BACKGROUND_COLOR_RED,
+			},
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Diagram type',
+					id: 'type',
+					default: DIAGRAM_TYPE_HISTOGRAM,
+					tooltip: 'Choose diagram type',
+					choices: CHOICES_PART_DIAGRAM_TYPE,
+					minChoicesForSearch: 0,
+				},
+				{
+					type: 'dropdown',
+					label: 'Diagram position',
+					id: 'position',
+					default: DIAGRAM_POSITION_MIDDLE_DEFAULT,
+					tooltip: 'Choose diagram position',
+					choices: CHOICES_PART_DIAGRAM_POSITION,
 					minChoicesForSearch: 0,
 				},
 			],
@@ -484,6 +592,67 @@ class instance extends instance_skel {
 				},
 			],
 		})
+
+		presets.push({
+			category: 'Diagram',
+			bank: {
+				style: 'text',
+				text: 'Close diagram',
+				size: 'auto',
+				color: this.TEXT_COLOR,
+				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
+			},
+			actions: [
+				{
+					action: ACTION_DIAGRAM_HIDE,
+				},
+			],
+			feedbacks: [
+				{
+					type: FEEDBACK_DIAGRAM_HIDDEN,
+					style: {
+						color: this.TEXT_COLOR,
+						bgcolor: this.BACKGROUND_COLOR_RED,
+					},
+				},
+			],
+		})
+		for (let type in DIAGRAM_TYPE_NAMES) {
+			for (let position in DIAGRAM_POSITION_NAMES) {
+				presets.push({
+					category: 'Diagram',
+					bank: {
+						style: 'text',
+						text: DIAGRAM_TYPE_NAMES[type] + ' at ' + DIAGRAM_POSITION_NAMES[position],
+						size: 'auto',
+						color: this.TEXT_COLOR,
+						bgcolor: this.BACKGROUND_COLOR_DEFAULT,
+					},
+					actions: [
+						{
+							action: ACTION_DIAGRAM_SHOW,
+							options: {
+								type: type,
+								position: position,
+							},
+						},
+					],
+					feedbacks: [
+						{
+							type: FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS,
+							options: {
+								type: type,
+								position: position,
+							},
+							style: {
+								color: this.TEXT_COLOR,
+								bgcolor: this.BACKGROUND_COLOR_RED,
+							},
+						},
+					],
+				})
+			}
+		}
 
 		this.setPresetDefinitions(presets)
 	}

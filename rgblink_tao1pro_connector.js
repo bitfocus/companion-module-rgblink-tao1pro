@@ -21,10 +21,40 @@ const PIP_MODE_TOP_RIGHT = 1
 const PIP_MODE_BOTTOM_LEFT = 2
 const PIP_MODE_BOTTOM_RIGHT = 3
 const PIP_MODE_NAMES = []
-PIP_MODE_NAMES[PIP_MODE_TOP_LEFT] = 'top left'
-PIP_MODE_NAMES[PIP_MODE_TOP_RIGHT] = 'top right'
-PIP_MODE_NAMES[PIP_MODE_BOTTOM_LEFT] = 'bottom left'
-PIP_MODE_NAMES[PIP_MODE_BOTTOM_RIGHT] = 'bottom right'
+PIP_MODE_NAMES[PIP_MODE_TOP_LEFT] = 'Top left'
+PIP_MODE_NAMES[PIP_MODE_TOP_RIGHT] = 'Top right'
+PIP_MODE_NAMES[PIP_MODE_BOTTOM_LEFT] = 'Bottom left'
+PIP_MODE_NAMES[PIP_MODE_BOTTOM_RIGHT] = 'Bottom right'
+
+const DIAGRAM_TYPE_HISTOGRAM = 0
+const DIAGRAM_TYPE_VECTOR_DIAGRAM = 1
+const DIAGRAM_TYPE_WAVEFORM_LUMINANCE = 2
+const DIAGRAM_TYPE_WAVEFORM_RGB = 3
+const DIAGRAM_TYPE_NAMES = []
+DIAGRAM_TYPE_NAMES[DIAGRAM_TYPE_HISTOGRAM] = 'Histogram'
+DIAGRAM_TYPE_NAMES[DIAGRAM_TYPE_VECTOR_DIAGRAM] = 'Vector diagram'
+DIAGRAM_TYPE_NAMES[DIAGRAM_TYPE_WAVEFORM_LUMINANCE] = 'Waveform - luminance'
+DIAGRAM_TYPE_NAMES[DIAGRAM_TYPE_WAVEFORM_RGB] = 'Waveform - RGB'
+
+const DIAGRAM_VISIBILITY_OFF = 0
+const DIAGRAM_VISIBILITY_OPEN = 1
+const DIAGRAM_VISIBILITY_NAMES = []
+DIAGRAM_VISIBILITY_NAMES[DIAGRAM_VISIBILITY_OFF] = 'Off'
+DIAGRAM_VISIBILITY_NAMES[DIAGRAM_VISIBILITY_OPEN] = 'Open'
+
+const DIAGRAM_POSITION_MIDDLE_DEFAULT = 0
+const DIAGRAM_POSITION_MIDDLE_MAXIMUM = 1
+const DIAGRAM_POSITION_BOTTOM_LEFT = 2
+const DIAGRAM_POSITION_BOTTOM_RIGHT = 3
+const DIAGRAM_POSITION_TOP_LEFT = 4
+const DIAGRAM_POSITION_TOP_RIGHT = 5
+const DIAGRAM_POSITION_NAMES = []
+DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_MIDDLE_DEFAULT] = 'Middle'
+DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_MIDDLE_MAXIMUM] = 'Middle - maximum'
+DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_BOTTOM_LEFT] = 'Bottom left'
+DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_BOTTOM_RIGHT] = 'Bottom right'
+DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_TOP_LEFT] = 'Top left'
+DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_TOP_RIGHT] = 'Top right'
 
 class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 	EVENT_NAME_ON_DEVICE_STATE_CHANGED = 'on_device_state_changed'
@@ -35,6 +65,11 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		programSourceSubChannel: undefined,
 		pipStatus: undefined,
 		pipMode: undefined,
+		diagram: {
+			type: undefined,
+			visibility: undefined,
+			position: undefined,
+		},
 	}
 
 	constructor(host, port, debug, polling) {
@@ -67,6 +102,7 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 
 	askAboutStatus() {
 		this.sendCommand('78', '02', '00', '00', '00') // 3.2.20 Read the master and secondary channel
+		this.sendCommand('C7', '01' /*read*/, '00', '00', '00') // 3.2.44 Waveform diagram, vector diagram, and histogram:
 	}
 
 	sendSwitchPreview(src) {
@@ -99,17 +135,42 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		}
 	}
 
+	sendSetDiagramState(visibility, type, position) {
+		if (
+			this.isDiagramTypeValid(type) &&
+			this.isDiagramVisibilityValid(visibility) &&
+			this.isDiagramPositionValid(position)
+		) {
+			this.sendCommand(
+				'C7',
+				'00',
+				this.byteToTwoSignHex(type),
+				this.byteToTwoSignHex(visibility),
+				this.byteToTwoSignHex(position)
+			)
+		} else {
+			this.debug('At last one wrong parameter. Visibility:' + visibility + ', type:' + type, ', position:' + position)
+		}
+	}
+
 	isValidSource(src) {
-		return src >= 0 && src <= 3
+		return src in SRC_NAMES
 	}
 
 	isValidPipMode(pipMode) {
-		return (
-			pipMode == PIP_MODE_TOP_LEFT ||
-			pipMode == PIP_MODE_TOP_RIGHT ||
-			pipMode == PIP_MODE_BOTTOM_LEFT ||
-			pipMode == PIP_MODE_BOTTOM_RIGHT
-		)
+		return pipMode in PIP_MODE_NAMES
+	}
+
+	isDiagramTypeValid(type) {
+		return type in DIAGRAM_TYPE_NAMES
+	}
+
+	isDiagramVisibilityValid(visibility) {
+		return visibility in DIAGRAM_VISIBILITY_NAMES
+	}
+
+	isDiagramPositionValid(position) {
+		return position in DIAGRAM_POSITION_NAMES
 	}
 
 	consumeFeedback(ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4) {
@@ -192,6 +253,32 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 					)
 				}
 			}
+		} else if (CMD == 'C7') {
+			if (DAT1 == '00' || DAT1 == '01') {
+				// 3.2.44 Waveform diagram, vector diagram, and histogram:
+				let type = parseInt(DAT2)
+				let visibility = parseInt(DAT3)
+				let position = parseInt(DAT4)
+				if (
+					this.isDiagramTypeValid(type) &&
+					this.isDiagramVisibilityValid(visibility) &&
+					this.isDiagramPositionValid(position)
+				) {
+					this.emitConnectionStatusOK()
+					this.deviceStatus.diagram.type = type
+					this.deviceStatus.diagram.visibility = visibility
+					this.deviceStatus.diagram.position = position
+					return this.logFeedback(
+						redeableMsg,
+						'Diagram visibility: ' +
+							DIAGRAM_VISIBILITY_NAMES[visibility] +
+							', type: ' +
+							DIAGRAM_TYPE_NAMES[type] +
+							', position:' +
+							DIAGRAM_POSITION_NAMES[position]
+					)
+				}
+			}
 		}
 
 		this.debug('Unrecognized feedback message:' + redeableMsg)
@@ -223,3 +310,21 @@ module.exports.PIP_MODE_TOP_RIGHT = PIP_MODE_TOP_RIGHT
 module.exports.PIP_MODE_BOTTOM_LEFT = PIP_MODE_BOTTOM_LEFT
 module.exports.PIP_MODE_BOTTOM_RIGHT = PIP_MODE_BOTTOM_RIGHT
 module.exports.PIP_MODE_NAMES = PIP_MODE_NAMES
+
+module.exports.DIAGRAM_TYPE_HISTOGRAM = DIAGRAM_TYPE_HISTOGRAM
+module.exports.DIAGRAM_TYPE_VECTOR_DIAGRAM = DIAGRAM_TYPE_VECTOR_DIAGRAM
+module.exports.DIAGRAM_TYPE_WAVEFORM_LUMINANCE = DIAGRAM_TYPE_WAVEFORM_LUMINANCE
+module.exports.DIAGRAM_TYPE_WAVEFORM_RGB = DIAGRAM_TYPE_WAVEFORM_RGB
+module.exports.DIAGRAM_TYPE_NAMES = DIAGRAM_TYPE_NAMES
+
+module.exports.DIAGRAM_VISIBILITY_OFF = DIAGRAM_VISIBILITY_OFF
+module.exports.DIAGRAM_VISIBILITY_OPEN = DIAGRAM_VISIBILITY_OPEN
+module.exports.DIAGRAM_VISIBILITY_NAMES = DIAGRAM_VISIBILITY_NAMES
+
+module.exports.DIAGRAM_POSITION_MIDDLE_DEFAULT = DIAGRAM_POSITION_MIDDLE_DEFAULT
+module.exports.DIAGRAM_POSITION_MIDDLE_MAXIMUM = DIAGRAM_POSITION_MIDDLE_MAXIMUM
+module.exports.DIAGRAM_POSITION_BOTTOM_LEFT = DIAGRAM_POSITION_BOTTOM_LEFT
+module.exports.DIAGRAM_POSITION_BOTTOM_RIGHT = DIAGRAM_POSITION_BOTTOM_RIGHT
+module.exports.DIAGRAM_POSITION_TOP_LEFT = DIAGRAM_POSITION_TOP_LEFT
+module.exports.DIAGRAM_POSITION_TOP_RIGHT = DIAGRAM_POSITION_TOP_RIGHT
+module.exports.DIAGRAM_POSITION_NAMES = DIAGRAM_POSITION_NAMES
