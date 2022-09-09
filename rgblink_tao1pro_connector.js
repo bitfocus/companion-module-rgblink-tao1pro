@@ -121,19 +121,21 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		}
 	}
 
-	sendSetPIPStatusAndMode(pipStatus, pipMode) {
-		if (pipStatus == PIP_OFF) {
-			this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_OFF), '00', '00')
-		} else if (pipStatus == PIP_ON) {
-			if (this.isValidPipMode(pipMode)) {
-				this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_ON), this.byteToTwoSignHex(pipMode), '00')
-			} else {
-				this.debug('Wrong PIP mode:' + pipMode)
-			}
-		} else {
-			this.debug('Wrong PIP status:' + pipStatus)
-		}
-	}
+	// DO NOT UNCOMMENT 
+	// THIS FUNCTION MAKES TAO 1pro useless, unless unplug all HDMI, reboot and then factory reset
+	// sendSetPIPStatusAndMode(pipStatus, pipMode) {
+	// 	if (pipStatus == PIP_OFF) {
+	// 		this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_OFF), '00', '00')
+	// 	} else if (pipStatus == PIP_ON) {
+	// 		if (this.isValidPipMode(pipMode)) {
+	// 			this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_ON), this.byteToTwoSignHex(pipMode), '00')
+	// 		} else {
+	// 			this.debug('Wrong PIP mode:' + pipMode)
+	// 		}
+	// 	} else {
+	// 		this.debug('Wrong PIP status:' + pipStatus)
+	// 	}
+	// }
 
 	sendSetDiagramState(visibility, type, position) {
 		if (
