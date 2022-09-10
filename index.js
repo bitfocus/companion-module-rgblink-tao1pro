@@ -36,6 +36,7 @@ const ACTION_PIP_OFF = 'pip_off'
 const ACTION_PIP_ON_WITH_MODE = 'pip_on_with_mode'
 const ACTION_DIAGRAM_HIDE = 'diagram_hide'
 const ACTION_DIAGRAM_SHOW = 'diagram_show'
+const ACTION_CUSTOM_COMMAND = 'custom_command'
 
 const FEEDBACK_PREVIEW_SRC = 'feedback_preview'
 const FEEDBACK_PROGRAM_SRC = 'feedback_program'
@@ -267,6 +268,29 @@ class instance extends instance_skel {
 			],
 			callback: (action /* , bank*/) => {
 				this.apiConnector.sendSetDiagramState(DIAGRAM_VISIBILITY_OPEN, action.options.type, action.options.position)
+			},
+		}
+
+		actions[ACTION_CUSTOM_COMMAND] = {
+			label: 'Custom command',
+			options: [
+				{
+					type: 'text',
+					id: 'info',
+					width: 12,
+					label: 'This actions send any command, that you define. Be sure to use proper command! Example command: <T000078020000007A>',
+			
+				},
+				{
+					type: 'textinput',
+					id: 'command',
+					label: 'Command',
+					width: 12,
+					value: '<T000078020000007A>',
+				},
+			],
+			callback: (action /* , bank*/) => {
+				this.apiConnector.sendCommandNative(action.options.command)
 			},
 		}
 
