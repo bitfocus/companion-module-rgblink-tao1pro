@@ -110,6 +110,13 @@ class instance extends instance_skel {
 				width: 12,
 				default: true,
 			},
+			{
+				type: 'checkbox',
+				label: 'Debug log',
+				id: 'debuglog',
+				width: 12,
+				default: false,
+			},
 		]
 	}
 
@@ -139,6 +146,9 @@ class instance extends instance_skel {
 			this.debug,
 			this.config.polling
 		)
+		if (this.config.debuglog) {
+			this.apiConnector.enableLog(this)
+		}
 		this.apiConnector.on(this.apiConnector.EVENT_NAME_ON_DEVICE_STATE_CHANGED, () => {
 			self.checkAllFeedbacks()
 		})
@@ -195,31 +205,31 @@ class instance extends instance_skel {
 			},
 		}
 
-		// actions[ACTION_PIP_OFF] = {
-		// 	label: 'Set PIP OFF ',
-		// 	options: [],
-		// 	callback: (/*action , bank*/) => {
-		// 		this.apiConnector.sendSetPIPStatusAndMode(PIP_OFF)
-		// 	},
-		// }
+		actions[ACTION_PIP_OFF] = {
+			label: 'Set PIP OFF ',
+			options: [],
+			callback: (/*action , bank*/) => {
+				this.apiConnector.sendSetPIPStatusAndMode(PIP_OFF)
+			},
+		}
 
-		// actions[ACTION_PIP_ON_WITH_MODE] = {
-		// 	label: 'Set PIP ON',
-		// 	options: [
-		// 		{
-		// 			type: 'dropdown',
-		// 			label: 'PIP mode',
-		// 			id: 'pipMode',
-		// 			default: PIP_MODE_TOP_LEFT,
-		// 			tooltip: 'Choose corner for second stream',
-		// 			choices: CHOICES_PART_PIP_MODE,
-		// 			minChoicesForSearch: 0,
-		// 		},
-		// 	],
-		// 	callback: (action /*, bank*/) => {
-		// 		this.apiConnector.sendSetPIPStatusAndMode(PIP_ON, action.options.pipMode)
-		// 	},
-		// }
+		actions[ACTION_PIP_ON_WITH_MODE] = {
+			label: 'Set PIP ON',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'PIP mode',
+					id: 'pipMode',
+					default: PIP_MODE_TOP_LEFT,
+					tooltip: 'Choose corner for second stream',
+					choices: CHOICES_PART_PIP_MODE,
+					minChoicesForSearch: 0,
+				},
+			],
+			callback: (action /*, bank*/) => {
+				this.apiConnector.sendSetPIPStatusAndMode(PIP_ON, action.options.pipMode)
+			},
+		}
 
 		actions[ACTION_DIAGRAM_HIDE] = {
 			label: 'Close diagram',
@@ -279,6 +289,14 @@ class instance extends instance_skel {
 
 		if (this.config.host != config.host) {
 			resetConnection = true
+		}
+
+		if (resetConnection === false && this.config.debuglog !== config.debuglog) {
+			if (config.debuglog === true) {
+				this.apiConnector.enableLog(this)
+			} else {
+				this.apiConnector.disableLog()
+			}
 		}
 
 		this.config = config
@@ -360,48 +378,48 @@ class instance extends instance_skel {
 			],
 		}
 
-		// feedbacks[FEEDBACK_PIP_OFF] = {
-		// 	type: 'boolean',
-		// 	label: 'PIP is OFF',
-		// 	description: 'Feedback, if PIP is OFF',
-		// 	style: {
-		// 		color: this.rgb(255, 255, 255),
-		// 		bgcolor: this.BACKGROUND_COLOR_RED,
-		// 	},
-		// 	options: [],
-		// }
+		feedbacks[FEEDBACK_PIP_OFF] = {
+			type: 'boolean',
+			label: 'PIP is OFF',
+			description: 'Feedback, if PIP is OFF',
+			style: {
+				color: this.rgb(255, 255, 255),
+				bgcolor: this.BACKGROUND_COLOR_RED,
+			},
+			options: [],
+		}
 
-		// feedbacks[FEEDBACK_PIP_ON_ANY_MODE] = {
-		// 	type: 'boolean',
-		// 	label: 'PIP is ON, in any mode',
-		// 	description: 'Feedback, if PIP is ON, in any PIP mode',
-		// 	style: {
-		// 		color: this.rgb(255, 255, 255),
-		// 		bgcolor: this.BACKGROUND_COLOR_RED,
-		// 	},
-		// 	options: [],
-		// }
+		feedbacks[FEEDBACK_PIP_ON_ANY_MODE] = {
+			type: 'boolean',
+			label: 'PIP is ON, in any mode',
+			description: 'Feedback, if PIP is ON, in any PIP mode',
+			style: {
+				color: this.rgb(255, 255, 255),
+				bgcolor: this.BACKGROUND_COLOR_RED,
+			},
+			options: [],
+		}
 
-		// feedbacks[FEEDBACK_PIP_ON_SELECTED_MODE] = {
-		// 	type: 'boolean',
-		// 	label: 'PIP is ON, with selected mode',
-		// 	description: 'Feedback, if PIP is ON and selected PIP mode is used',
-		// 	style: {
-		// 		color: this.rgb(255, 255, 255),
-		// 		bgcolor: this.BACKGROUND_COLOR_RED,
-		// 	},
-		// 	options: [
-		// 		{
-		// 			type: 'dropdown',
-		// 			label: 'PIP mode',
-		// 			id: 'pipMode',
-		// 			default: PIP_MODE_TOP_LEFT,
-		// 			tooltip: 'Choose corner for second stream',
-		// 			choices: CHOICES_PART_PIP_MODE,
-		// 			minChoicesForSearch: 0,
-		// 		},
-		// 	],
-		// }
+		feedbacks[FEEDBACK_PIP_ON_SELECTED_MODE] = {
+			type: 'boolean',
+			label: 'PIP is ON, with selected mode',
+			description: 'Feedback, if PIP is ON and selected PIP mode is used',
+			style: {
+				color: this.rgb(255, 255, 255),
+				bgcolor: this.BACKGROUND_COLOR_RED,
+			},
+			options: [
+				{
+					type: 'dropdown',
+					label: 'PIP mode',
+					id: 'pipMode',
+					default: PIP_MODE_TOP_LEFT,
+					tooltip: 'Choose corner for second stream',
+					choices: CHOICES_PART_PIP_MODE,
+					minChoicesForSearch: 0,
+				},
+			],
+		}
 
 		feedbacks[FEEDBACK_DIAGRAM_HIDDEN] = {
 			type: 'boolean',
@@ -516,82 +534,82 @@ class instance extends instance_skel {
 			})
 		}
 
-		// presets.push({
-		// 	category: 'PIP',
-		// 	bank: {
-		// 		style: 'text',
-		// 		text: 'PIP OFF',
-		// 		size: 'auto',
-		// 		color: this.TEXT_COLOR,
-		// 		bgcolor: this.BACKGROUND_COLOR_DEFAULT,
-		// 	},
-		// 	actions: [
-		// 		{
-		// 			action: ACTION_PIP_OFF,
-		// 		},
-		// 	],
-		// 	feedbacks: [
-		// 		{
-		// 			type: FEEDBACK_PIP_OFF,
-		// 			style: {
-		// 				color: this.TEXT_COLOR,
-		// 				bgcolor: this.BACKGROUND_COLOR_RED,
-		// 			},
-		// 		},
-		// 	],
-		// })
-		// for (let id in PIP_MODE_NAMES) {
-		// 	presets.push({
-		// 		category: 'PIP',
-		// 		bank: {
-		// 			style: 'text',
-		// 			text: 'PIP ON\\n' + PIP_MODE_NAMES[id],
-		// 			size: 'auto',
-		// 			color: this.TEXT_COLOR,
-		// 			bgcolor: this.BACKGROUND_COLOR_DEFAULT,
-		// 		},
-		// 		actions: [
-		// 			{
-		// 				action: ACTION_PIP_ON_WITH_MODE,
-		// 				options: {
-		// 					pipMode: id,
-		// 				},
-		// 			},
-		// 		],
-		// 		feedbacks: [
-		// 			{
-		// 				type: FEEDBACK_PIP_ON_SELECTED_MODE,
-		// 				options: {
-		// 					pipMode: id,
-		// 				},
-		// 				style: {
-		// 					color: this.TEXT_COLOR,
-		// 					bgcolor: this.BACKGROUND_COLOR_RED,
-		// 				},
-		// 			},
-		// 		],
-		// 	})
-		// }
-		// presets.push({
-		// 	category: 'PIP',
-		// 	bank: {
-		// 		style: 'text',
-		// 		text: 'is PIP ON?',
-		// 		size: 'auto',
-		// 		color: this.TEXT_COLOR,
-		// 		bgcolor: this.BACKGROUND_COLOR_DEFAULT,
-		// 	},
-		// 	actions: [],
-		// 	feedbacks: [
-		// 		{
-		// 			type: FEEDBACK_PIP_ON_ANY_MODE,
-		// 			style: {
-		// 				color: this.TEXT_COLOR,
-		// 				bgcolor: this.BACKGROUND_COLOR_RED,
-		// 			},
-		// 		},
-		// 	],
-		// })
+		presets.push({
+			category: 'PIP',
+			bank: {
+				style: 'text',
+				text: 'PIP OFF',
+				size: 'auto',
+				color: this.TEXT_COLOR,
+				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
+			},
+			actions: [
+				{
+					action: ACTION_PIP_OFF,
+				},
+			],
+			feedbacks: [
+				{
+					type: FEEDBACK_PIP_OFF,
+					style: {
+						color: this.TEXT_COLOR,
+						bgcolor: this.BACKGROUND_COLOR_RED,
+					},
+				},
+			],
+		})
+		for (let id in PIP_MODE_NAMES) {
+			presets.push({
+				category: 'PIP',
+				bank: {
+					style: 'text',
+					text: 'PIP ON\\n' + PIP_MODE_NAMES[id],
+					size: 'auto',
+					color: this.TEXT_COLOR,
+					bgcolor: this.BACKGROUND_COLOR_DEFAULT,
+				},
+				actions: [
+					{
+						action: ACTION_PIP_ON_WITH_MODE,
+						options: {
+							pipMode: id,
+						},
+					},
+				],
+				feedbacks: [
+					{
+						type: FEEDBACK_PIP_ON_SELECTED_MODE,
+						options: {
+							pipMode: id,
+						},
+						style: {
+							color: this.TEXT_COLOR,
+							bgcolor: this.BACKGROUND_COLOR_RED,
+						},
+					},
+				],
+			})
+		}
+		presets.push({
+			category: 'PIP',
+			bank: {
+				style: 'text',
+				text: 'is PIP ON?',
+				size: 'auto',
+				color: this.TEXT_COLOR,
+				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
+			},
+			actions: [],
+			feedbacks: [
+				{
+					type: FEEDBACK_PIP_ON_ANY_MODE,
+					style: {
+						color: this.TEXT_COLOR,
+						bgcolor: this.BACKGROUND_COLOR_RED,
+					},
+				},
+			],
+		})
 
 		presets.push({
 			category: 'Diagram',

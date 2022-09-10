@@ -77,7 +77,7 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		var self = this
 
 		this.on(this.EVENT_NAME_ON_DATA_API_NOT_STANDARD_LENGTH, (message /*, metadata*/) => {
-			this.debug('Not standard data:' + message)
+			this.myDebug('Not standard data:' + message)
 			// if (metadata.size == 22) {
 			// 	self.consume22(message)
 			// 	this.emit(this.EVENT_NAME_ON_DEVICE_STATE_CHANGED, [])
@@ -102,14 +102,16 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 
 	askAboutStatus() {
 		this.sendCommand('78', '02', '00', '00', '00') // 3.2.20 Read the master and secondary channel
-		this.sendCommand('C7', '01' /*read*/, '00', '00', '00') // 3.2.44 Waveform diagram, vector diagram, and histogram:
+
+		// THIS NOT WORK, it closes graph?
+		//this.sendCommand('C7', '01' /*read*/, '00', '00', '00') // 3.2.44 Waveform diagram, vector diagram, and histogram:
 	}
 
 	sendSwitchPreview(src) {
 		if (this.isValidSource(src)) {
 			this.sendCommand('78', '00' /*write on preview*/, this.byteToTwoSignHex(src), '00', '00')
 		} else {
-			this.debug('Wrong source number: ' + src)
+			this.myDebug('Wrong source number: ' + src)
 		}
 	}
 
@@ -117,25 +119,26 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		if (this.isValidSource(src)) {
 			this.sendCommand('78', '01' /*write on program*/, this.byteToTwoSignHex(src), '00', '00')
 		} else {
-			this.debug('Wrong source number: ' + src)
+			this.myDebug('Wrong source number: ' + src)
 		}
 	}
 
-	// DO NOT UNCOMMENT 
-	// THIS FUNCTION MAKES TAO 1pro useless, unless unplug all HDMI, reboot and then factory reset
-	// sendSetPIPStatusAndMode(pipStatus, pipMode) {
-	// 	if (pipStatus == PIP_OFF) {
-	// 		this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_OFF), '00', '00')
-	// 	} else if (pipStatus == PIP_ON) {
-	// 		if (this.isValidPipMode(pipMode)) {
-	// 			this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_ON), this.byteToTwoSignHex(pipMode), '00')
-	// 		} else {
-	// 			this.debug('Wrong PIP mode:' + pipMode)
-	// 		}
-	// 	} else {
-	// 		this.debug('Wrong PIP status:' + pipStatus)
-	// 	}
-	// }
+	//THIS FUNCTION MAKES TAO 1pro useless, unless unplug all HDMI, reboot and then factory reset
+	sendSetPIPStatusAndMode(/*pipStatus, pipMode*/) {
+		this.myDebug('PIP function disabled by developer')
+		return
+		// if (pipStatus == PIP_OFF) {
+		// 	this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_OFF), '00', '00')
+		// } else if (pipStatus == PIP_ON) {
+		// 	if (this.isValidPipMode(pipMode)) {
+		// 		this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_ON), this.byteToTwoSignHex(pipMode), '00')
+		// 	} else {
+		// 		this.myDebug('Wrong PIP mode:' + pipMode)
+		// 	}
+		// } else {
+		// 	this.myDebug('Wrong PIP status:' + pipStatus)
+		// }
+	}
 
 	sendSetDiagramState(visibility, type, position) {
 		if (
@@ -151,7 +154,7 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 				this.byteToTwoSignHex(position)
 			)
 		} else {
-			this.debug('At last one wrong parameter. Visibility:' + visibility + ', type:' + type, ', position:' + position)
+			this.myDebug('At last one wrong parameter. Visibility:' + visibility + ', type:' + type, ', position:' + position)
 		}
 	}
 
@@ -283,11 +286,11 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 			}
 		}
 
-		this.debug('Unrecognized feedback message:' + redeableMsg)
+		this.myDebug('Unrecognized feedback message:' + redeableMsg)
 	}
 
 	logFeedback(redeableMsg, info) {
-		this.debug('Feedback:' + redeableMsg + ' ' + info)
+		this.myDebug('Feedback:' + redeableMsg + ' ' + info)
 	}
 
 	emitConnectionStatusOK() {

@@ -1,4 +1,4 @@
-// version 1.0
+// version 1.1-SNAPSHOT
 
 const UDPSocket = require('../../udp')
 
@@ -15,6 +15,7 @@ class RGBLinkApiConnector {
 		polling: undefined,
 	}
 	debug
+	logProvider
 	socket = new UDPSocket()
 	eventsListeners = []
 	nextSn = 0
@@ -35,6 +36,33 @@ class RGBLinkApiConnector {
 		}, 1000)
 	}
 
+	enableLog(logProvider) {
+		this.logProvider = logProvider
+	}
+
+	disableLog(){
+		this.logProvider = undefined
+	}
+
+	myDebug(msg) {
+		try {
+			if (this.debug) {
+				this.debug(msg)
+			}
+		} catch (ex) {
+			console.log(ex) // is it log anything?
+		}
+
+		try {
+			if (this.logProvider) {
+				this.logProvider.log('debug', msg)
+			}
+		} catch (ex) {
+			console.log(ex) // is it log anything?
+		}
+
+	}
+
 	onEveryOneSecond() {
 		if (this.config.polling) {
 			this.askAboutStatus()
@@ -46,26 +74,26 @@ class RGBLinkApiConnector {
 			var sentDate = new Date().getTime()
 			var self = this
 
-			;(function (sentDate2) {
-				setTimeout(function () {
-					if (typeof self.lastDataReceivedTime === 'undefined' || self.lastDataReceivedTime < sentDate2) {
-						let lastReceiveOrStart = self.lastDataReceivedTime || self.createTime
-						self.emit(
-							self.EVENT_NAME_ON_CONNECTION_WARNING,
-							'The device has not sent any data since ' + new Date(lastReceiveOrStart).toLocaleTimeString()
-						)
-					}
-				}, 2000)
-			})(sentDate)
+				; (function (sentDate2) {
+					setTimeout(function () {
+						if (typeof self.lastDataReceivedTime === 'undefined' || self.lastDataReceivedTime < sentDate2) {
+							let lastReceiveOrStart = self.lastDataReceivedTime || self.createTime
+							self.emit(
+								self.EVENT_NAME_ON_CONNECTION_WARNING,
+								'The device has not sent any data since ' + new Date(lastReceiveOrStart).toLocaleTimeString()
+							)
+						}
+					}, 2000)
+				})(sentDate)
 		} catch (ex) {
 			if (this.debug) {
-				this.debug(ex)
+				this.myDebug(ex)
 			}
 		}
 	}
 
 	createSocket(host, port) {
-		this.debug('RGBLinkApiConnector: creating socket ' + host + ':' + port + '...')
+		this.myDebug('RGBLinkApiConnector: creating socket ' + host + ':' + port + '...')
 		this.config.host = host
 
 		if (this.socket !== undefined) {
@@ -78,14 +106,15 @@ class RGBLinkApiConnector {
 		if (host) {
 			this.socket = new UDPSocket(host, port)
 			this.socket.on('status_change', (status, message) => {
-				this.debug('RGBLinkApiConnector: udp status_change:' + status + ' ' + message)
+				this.myDebug('RGBLinkApiConnector: udp status_change:' + status + ' ' + message)
 			})
 
 			this.socket.on('error', (err) => {
-				this.debug('RGBLinkApiConnector: udp error:' + err)
+				this.myDebug('RGBLinkApiConnector: udp error:' + err)
 			})
 
 			this.socket.on('data', (message, metadata) => {
+				this.myDebug('FEEDBACK: ' + message)
 				this.onDataReceived(message, metadata)
 			})
 		}
@@ -100,7 +129,7 @@ class RGBLinkApiConnector {
 			}
 			this.lastDataReceivedTime = new Date().getTime()
 		} catch (ex) {
-			this.debug(ex)
+			this.myDebug(ex)
 		}
 	}
 
@@ -136,14 +165,15 @@ class RGBLinkApiConnector {
 			if (cmd !== undefined && cmd != '') {
 				if (this.socket !== undefined) {
 					this.socket.send(cmd)
+					this.myDebug('SENT    : ' + cmd)
 					this.lastDataSentTime = new Date().getTime()
 					this.onAfterDataSent()
 				} else {
-					this.debug("Can't send command, socket undefined!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+					this.myDebug("Can't send command, socket undefined!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				}
 			}
 		} catch (ex) {
-			this.debug(ex)
+			this.myDebug(ex)
 		}
 	}
 
@@ -206,7 +236,7 @@ class RGBLinkApiConnector {
 		let calculatedChecksum = this.calculateChecksum(ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4)
 		if (checksumInMessage != calculatedChecksum) {
 			this.emit(this.EVENT_NAME_ON_CONNECTION_WARNING, 'Incorrect checksum ' + redeableMsg)
-			this.debug('redeableMsg Incorrect checksum: ' + checksumInMessage + ' != ' + calculatedChecksum)
+			this.myDebug('redeableMsg Incorrect checksum: ' + checksumInMessage + ' != ' + calculatedChecksum)
 			return
 		}
 
