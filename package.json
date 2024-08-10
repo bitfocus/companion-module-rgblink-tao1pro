@@ -1,26 +1,23 @@
 {
   "name": "rgblink-tao1pro",
   "version": "1.0.1",
-  "description": "RGBlink TAO 1pro",
-  "manufacturer": "RGBlink",
-  "product": "TAO 1pro",
-  "shortname": "TAO 1pro",
-  "main": "index.js",
-  "keywords": ["rgblink", "TAO1", "1pro"],
+  "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "format": "prettier -w"
   },
   "author": "Marcin Gumułka <marcingum@gmail.com>;",
   "license": "MIT",
-  "devDependencies": {
-    "eslint": "^8.21.0"
-  },
-  "homepage": "https://github.com/bitfocus/companion-module-rgblink-tao1pro",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bitfocus/companion-module-rgblink-tao1pro.git"
   },
-  "bugs": {
-    "url": "https://github.com/bitfocus/companion-module-rgblink-tao1pro/issues"
-  }
+  "dependencies": {
+    "@companion-module/base": "~1.0.1"
+  },
+  "devDependencies": {
+    "@companion-module/tools": "^0.5.1",
+    "eslint": "^8.32.0"
+  },
+  "prettier": "@companion-module/tools/.prettierrc.json",
+  "homepage": "https://github.com/bitfocus/companion-module-rgblink-tao1pro"
 }

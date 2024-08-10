@@ -1,0 +1,26 @@
+{
+	"id": "rgblink-tao1pro",
+	"name": "rgblink-tao1pro",
+	"shortname": "tao1pro",
+	"description": "RGBlink TAO 1pro",
+	"version": "1.0.0",
+	"license": "MIT",
+	"repository": "git+https://github.com/bitfocus/companion-module-rgblink-tao1pro.git",
+	"bugs": "https://github.com/bitfocus/companion-module-rgblink-tao1pro/issues",
+	"maintainers": [
+		{
+			"name": "Marcin Gumułka",
+			"email": "marcingum@gmail.com"
+		}
+	],
+	"runtime": {
+		"type": "node18",
+		"api": "nodejs-ipc",
+		"apiVersion": "0.0.0",
+		"entrypoint": "../main.js"
+	},
+	"legacyIds": [],
+	"manufacturer": "RGBlink",
+	"products": ["TAO 1pro"],
+	"keywords": ["rgblink", "TAO1", "1pro"]
+}

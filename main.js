@@ -9,7 +9,9 @@ usefull commands
 
 */
 
-const instance_skel = require('../../instance_skel')
+const { InstanceBase, runEntrypoint, InstanceStatus, Regex } = require('@companion-module/base')
+const UpgradeScripts = require('./upgrades')
+const { combineRgb } = require('@companion-module/base')
 
 const {
 	RGBLinkTAO1ProConnector,
@@ -26,7 +28,9 @@ const {
 	DIAGRAM_TYPE_NAMES,
 	DIAGRAM_POSITION_NAMES,
 	DIAGRAM_VISIBILITY_OPEN,
-} = require('./rgblink_tao1pro_connector.js')
+} = require('./api/rgblink_tao1pro_connector')
+//rgblink_tao1pro_connector
+const { ApiConfig } = require('./api/rgblinkapiconnector')
 
 var DEFAULT_1PRO_PORT = 5560
 
@@ -71,38 +75,38 @@ for (let id in DIAGRAM_POSITION_NAMES) {
 	CHOICES_PART_DIAGRAM_POSITION.push({ id: id, label: DIAGRAM_POSITION_NAMES[id] })
 }
 
-class instance extends instance_skel {
+class Tao1ProInstance extends InstanceBase {
 	BACKGROUND_COLOR_GREEN
 	BACKGROUND_COLOR_RED
 	BACKGROUND_COLOR_DEFAULT
 	TEXT_COLOR
 	apiConnector = new RGBLinkTAO1ProConnector() //creation should be overwrited in init()
 
-	constructor(system, id, config) {
-		super(system, id, config)
-		this.BACKGROUND_COLOR_GREEN = this.rgb(0, 128, 0)
-		this.BACKGROUND_COLOR_RED = this.rgb(255, 0, 0)
-		this.BACKGROUND_COLOR_DEFAULT = this.rgb(0, 0, 0)
-		this.TEXT_COLOR = this.rgb(255, 255, 255)
-		this.initActions()
-		this.initPresets()
+	constructor(internal) {
+		super(internal)
+		this.BACKGROUND_COLOR_GREEN = combineRgb(0, 128, 0)
+		this.BACKGROUND_COLOR_RED = combineRgb(255, 0, 0)
+		this.BACKGROUND_COLOR_DEFAULT = combineRgb(0, 0, 0)
+		this.TEXT_COLOR = combineRgb(255, 255, 255)
 	}
 
-	config_fields() {
+	getConfigFields() {
 		return [
 			{
 				type: 'textinput',
 				id: 'host',
 				label: 'IP address of TAO 1pro device',
-				width: 12,
-				regex: this.REGEX_IP,
+				width: 8,
+				regex: Regex.IP,
 			},
 			{
-				type: 'text',
+				type: 'textinput',
 				id: 'info',
-				width: 12,
+				width: 4,
 				label: 'Port',
-				value: 'Will be used default port ' + DEFAULT_1PRO_PORT,
+				default: DEFAULT_1PRO_PORT,
+
+				regex: Regex.PORT,
 			},
 			{
 				type: 'checkbox',
@@ -113,8 +117,8 @@ class instance extends instance_skel {
 			},
 			{
 				type: 'checkbox',
-				label: 'Debug log',
-				id: 'debuglog',
+				label: 'Debug logging of every sent/received command (may slow down your computer)',
+				id: 'logEveryCommand',
 				width: 12,
 				default: false,
 			},
@@ -122,56 +126,59 @@ class instance extends instance_skel {
 	}
 
 	destroy() {
-		this.debug('RGBlink TAO1 pro: destroy')
+		this.log('debug', 'destroy')
 		this.apiConnector.sendDisconnectMessage()
 		this.apiConnector.onDestroy()
 		this.debug('destroy', this.id)
 	}
 
-	init() {
+	async init(config) {
+		this.config = config
 		try {
-			this.debug('RGBlink TAO1 pro: init')
+			this.log('debug', 'init')
 			this.initApiConnector()
-			this.initFeedbacks()
+
+			this.updateActions()
+			this.updateFeedbacks()
+			this.updatePresets()
 		} catch (ex) {
-			this.status(this.STATUS_ERROR, ex)
-			this.debug(ex)
+			this.updateStatus(InstanceStatus.UnknownError, ex)
+			console.log(ex)
+			this.log('error', ex)
 		}
 	}
 
 	initApiConnector() {
 		let self = this
 		this.apiConnector = new RGBLinkTAO1ProConnector(
-			this.config.host,
-			DEFAULT_1PRO_PORT,
-			this.debug,
-			this.config.polling
+			new ApiConfig(
+				this.config.host,
+				this.config.port ? this.config.port : DEFAULT_1PRO_PORT,
+				this.config.polling,
+				this.config.logEveryCommand ? this.config.logEveryCommand : false
+			)
 		)
-		if (this.config.debuglog) {
-			this.apiConnector.enableLog(this)
-		}
-		this.apiConnector.on(this.apiConnector.EVENT_NAME_ON_DEVICE_STATE_CHANGED, () => {
-			self.checkAllFeedbacks()
+		this.apiConnector.enableLog(this)
+		this.apiConnector.on(this.apiConnector.EVENT_NAME_ON_DEVICE_STATE_CHANGED, (changedEvents) => {
+			self.checkAllFeedbacks(changedEvents)
 		})
 		this.apiConnector.on(this.apiConnector.EVENT_NAME_ON_CONNECTION_OK, (message) => {
-			self.status(self.STATUS_OK, message)
+			self.updateStatus(InstanceStatus.Ok, message)
 		})
 		this.apiConnector.on(this.apiConnector.EVENT_NAME_ON_CONNECTION_WARNING, (message) => {
-			self.status(self.STATUS_WARNING, message)
+			self.updateStatus(InstanceStatus.UnknownWarning, message)
 		})
 		this.apiConnector.on(this.apiConnector.EVENT_NAME_ON_CONNECTION_ERROR, (message) => {
-			self.status(self.STATUS_ERROR, message)
+			self.updateStatus(InstanceStatus.UnknownError, message)
 		})
-		this.status(this.STATUS_WARNING, 'Connecting')
-		this.apiConnector.sendConnectMessage()
-		this.apiConnector.askAboutStatus()
+		this.updateStatus(InstanceStatus.Connecting)
 	}
 
-	initActions() {
+	updateActions() {
 		let actions = {}
 
 		actions[ACTION_SWITCH_PREVIEW] = {
-			label: 'Switch source on preview',
+			name: 'Switch source on preview',
 			options: [
 				{
 					type: 'dropdown',
@@ -183,13 +190,13 @@ class instance extends instance_skel {
 					minChoicesForSearch: 0,
 				},
 			],
-			callback: (action /*, bank*/) => {
+			callback: async (action /*, bank*/) => {
 				this.apiConnector.sendSwitchPreview(action.options.source)
 			},
 		}
 
 		actions[ACTION_SWITCH_PROGRAM] = {
-			label: 'Switch source on program',
+			name: 'Switch source on program',
 			options: [
 				{
 					type: 'dropdown',
@@ -201,21 +208,21 @@ class instance extends instance_skel {
 					minChoicesForSearch: 0,
 				},
 			],
-			callback: (action /*, bank*/) => {
+			callback: async (action /*, bank*/) => {
 				this.apiConnector.sendSwitchProgram(action.options.source)
 			},
 		}
 
 		actions[ACTION_PIP_OFF] = {
-			label: 'Set PIP OFF ',
+			name: 'Set PIP OFF ',
 			options: [],
-			callback: (/*action , bank*/) => {
+			callback: async (/*action , bank*/) => {
 				this.apiConnector.sendSetPIPStatusAndMode(PIP_OFF)
 			},
 		}
 
 		actions[ACTION_PIP_ON_WITH_MODE] = {
-			label: 'Set PIP ON',
+			name: 'Set PIP ON',
 			options: [
 				{
 					type: 'dropdown',
@@ -227,15 +234,15 @@ class instance extends instance_skel {
 					minChoicesForSearch: 0,
 				},
 			],
-			callback: (action /*, bank*/) => {
+			callback: async (action /*, bank*/) => {
 				this.apiConnector.sendSetPIPStatusAndMode(PIP_ON, action.options.pipMode)
 			},
 		}
 
 		actions[ACTION_DIAGRAM_HIDE] = {
-			label: 'Close diagram',
+			name: 'Close diagram',
 			options: [],
-			callback: (/*action , bank*/) => {
+			callback: async (/*action , bank*/) => {
 				this.apiConnector.sendSetDiagramState(
 					DIAGRAM_VISIBILITY_OFF,
 					DIAGRAM_TYPE_HISTOGRAM,
@@ -245,7 +252,7 @@ class instance extends instance_skel {
 		}
 
 		actions[ACTION_DIAGRAM_SHOW] = {
-			label: 'Show diagram',
+			name: 'Show diagram',
 			options: [
 				{
 					type: 'dropdown',
@@ -266,20 +273,20 @@ class instance extends instance_skel {
 					minChoicesForSearch: 0,
 				},
 			],
-			callback: (action /* , bank*/) => {
+			callback: async (action /* , bank*/) => {
 				this.apiConnector.sendSetDiagramState(DIAGRAM_VISIBILITY_OPEN, action.options.type, action.options.position)
 			},
 		}
 
 		actions[ACTION_CUSTOM_COMMAND] = {
-			label: 'Custom command',
+			name: 'Custom command',
 			options: [
 				{
 					type: 'text',
 					id: 'info',
 					width: 12,
 					label: 'This actions send any command, that you define. Be sure to use proper command! Example command: <T000078020000007A>',
-			
+
 				},
 				{
 					type: 'textinput',
@@ -289,12 +296,12 @@ class instance extends instance_skel {
 					value: '<T000078020000007A>',
 				},
 			],
-			callback: (action /* , bank*/) => {
+			callback: async (action /* , bank*/) => {
 				this.apiConnector.sendCommandNative(action.options.command)
 			},
 		}
 
-		this.setActions(actions)
+		this.setActionDefinitions(actions)
 	}
 
 	checkAllFeedbacks() {
@@ -307,65 +314,39 @@ class instance extends instance_skel {
 		this.checkFeedbacks(FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS)
 	}
 
-	updateConfig(config) {
-		this.debug('RGBlink TAO1 pro: updateConfig')
-		let resetConnection = false
+	async configUpdated(config) {
+		this.log('debug', 'updateConfig')
+		try {
+			let resetConnection = false
 
-		if (this.config.host != config.host) {
-			resetConnection = true
-		}
-
-		if (resetConnection === false && this.config.debuglog !== config.debuglog) {
-			if (config.debuglog === true) {
-				this.apiConnector.enableLog(this)
-			} else {
-				this.apiConnector.disableLog()
+			if (this.config.host != config.host || this.config.port != config.port) {
+				resetConnection = true
 			}
+
+			this.config = config
+
+			if (resetConnection === true) {
+				this.apiConnector.createSocket(config.host, config.port)
+			}
+
+			this.apiConnector.setPolling(this.config.polling)
+			this.apiConnector.setLogEveryCommand(this.config.logEveryCommand ? this.config.logEveryCommand : false)
+		} catch (ex) {
+			this.updateStatus(InstanceStatus.UnknownError, ex)
+			console.log(ex)
+			this.log('error', ex)
 		}
-
-		this.config = config
-
-		if (resetConnection === true) {
-			this.apiConnector.createSocket(config.host, DEFAULT_1PRO_PORT)
-		}
-
-		this.apiConnector.setPolling(config.polling)
 	}
 
-	feedback(feedback /*, bank*/) {
-		let deviceStatus = this.apiConnector.deviceStatus
-		if (feedback.type == FEEDBACK_PREVIEW_SRC) {
-			return feedback.options.source == deviceStatus.previewSourceMainChannel
-		} else if (feedback.type == FEEDBACK_PROGRAM_SRC) {
-			return feedback.options.source == deviceStatus.programSourceMainChannel
-		} else if (feedback.type == FEEDBACK_PIP_OFF) {
-			return deviceStatus.pipStatus == PIP_OFF
-		} else if (feedback.type == FEEDBACK_PIP_ON_ANY_MODE) {
-			return deviceStatus.pipStatus == PIP_ON
-		} else if (feedback.type == FEEDBACK_PIP_ON_SELECTED_MODE) {
-			return deviceStatus.pipStatus == PIP_ON && feedback.options.pipMode == deviceStatus.pipMode
-		} else if (feedback.type == FEEDBACK_DIAGRAM_HIDDEN) {
-			return deviceStatus.diagram.visibility == DIAGRAM_VISIBILITY_OFF
-		} else if (feedback.type == FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS) {
-			return (
-				deviceStatus.diagram.visibility == DIAGRAM_VISIBILITY_OPEN &&
-				feedback.options.type == deviceStatus.diagram.type &&
-				feedback.options.position == deviceStatus.diagram.position
-			)
-		}
-
-		return false
-	}
-
-	initFeedbacks() {
+	updateFeedbacks() {
 		const feedbacks = {}
 
 		feedbacks[FEEDBACK_PREVIEW_SRC] = {
 			type: 'boolean',
-			label: 'Selected source on preview',
+			name: 'Selected source on preview',
 			description: 'Feedback, if selected source is used on preview',
-			style: {
-				color: this.rgb(255, 255, 255),
+			defaultStyle: {
+				color: combineRgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_GREEN,
 			},
 			options: [
@@ -379,14 +360,17 @@ class instance extends instance_skel {
 					minChoicesForSearch: 0,
 				},
 			],
+			callback: (feedback) => {
+				return feedback.options.source == this.apiConnector.deviceStatus.previewSourceMainChannel
+			}
 		}
 
 		feedbacks[FEEDBACK_PROGRAM_SRC] = {
 			type: 'boolean',
-			label: 'Selected source on program',
+			name: 'Selected source on program',
 			description: 'Feedback, if selected source is used on program',
 			style: {
-				color: this.rgb(255, 255, 255),
+				color: combineRgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_RED,
 			},
 			options: [
@@ -400,36 +384,45 @@ class instance extends instance_skel {
 					minChoicesForSearch: 0,
 				},
 			],
+			callback: (feedback) => {
+				return feedback.options.source == this.apiConnector.deviceStatus.programSourceMainChannel
+			}
 		}
 
 		feedbacks[FEEDBACK_PIP_OFF] = {
 			type: 'boolean',
-			label: 'PIP is OFF',
+			name: 'PIP is OFF',
 			description: 'Feedback, if PIP is OFF',
 			style: {
-				color: this.rgb(255, 255, 255),
+				color: combineRgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_RED,
 			},
 			options: [],
+			callback: (/*feedback*/) => {
+				return this.apiConnector.deviceStatus.pipStatus == PIP_OFF
+			}
 		}
 
 		feedbacks[FEEDBACK_PIP_ON_ANY_MODE] = {
 			type: 'boolean',
-			label: 'PIP is ON, in any mode',
+			name: 'PIP is ON, in any mode',
 			description: 'Feedback, if PIP is ON, in any PIP mode',
 			style: {
-				color: this.rgb(255, 255, 255),
+				color: combineRgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_RED,
 			},
 			options: [],
+			callback: (/*feedback*/) => {
+				return this.apiConnector.deviceStatus.pipStatus == PIP_ON
+			}
 		}
 
 		feedbacks[FEEDBACK_PIP_ON_SELECTED_MODE] = {
 			type: 'boolean',
-			label: 'PIP is ON, with selected mode',
+			name: 'PIP is ON, with selected mode',
 			description: 'Feedback, if PIP is ON and selected PIP mode is used',
 			style: {
-				color: this.rgb(255, 255, 255),
+				color: combineRgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_RED,
 			},
 			options: [
@@ -443,25 +436,31 @@ class instance extends instance_skel {
 					minChoicesForSearch: 0,
 				},
 			],
+			callback: (feedback) => {
+				return this.apiConnector.deviceStatus.pipStatus == PIP_ON && feedback.options.pipMode == this.apiConnector.deviceStatus.pipMode
+			}
 		}
 
 		feedbacks[FEEDBACK_DIAGRAM_HIDDEN] = {
 			type: 'boolean',
-			label: 'Diagram is closed (invisible)',
+			name: 'Diagram is closed (invisible)',
 			description: 'Feedback, diagram is closed',
 			style: {
-				color: this.rgb(255, 255, 255),
+				color: combineRgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_RED,
 			},
 			options: [],
+			callback: (/*feedback*/) => {
+				return this.apiConnector.deviceStatus.diagram.visibility == DIAGRAM_VISIBILITY_OFF
+			}
 		}
 
 		feedbacks[FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS] = {
 			type: 'boolean',
-			label: 'Diagram is visible, with specific settings',
+			name: 'Diagram is visible, with specific settings',
 			description: 'Feedback, if diagram is visible, with specific diagram type and diagram position',
 			style: {
-				color: this.rgb(255, 255, 255),
+				color: combineRgb(255, 255, 255),
 				bgcolor: this.BACKGROUND_COLOR_RED,
 			},
 			options: [
@@ -484,35 +483,48 @@ class instance extends instance_skel {
 					minChoicesForSearch: 0,
 				},
 			],
+			callback: (feedback) => {
+				return (
+					this.apiConnector.deviceStatus.diagram.visibility == DIAGRAM_VISIBILITY_OPEN &&
+					feedback.options.type == this.apiConnector.deviceStatus.diagram.type &&
+					feedback.options.position == this.apiConnector.deviceStatus.diagram.position
+				)
+			}
 		}
 
 		this.setFeedbackDefinitions(feedbacks)
 	}
 
-	initPresets() {
+	updatePresets() {
 		let presets = []
 
 		for (let id in SRC_NAMES) {
 			presets.push({
+				type: 'button',
 				category: 'Switch source on preview',
-				bank: {
-					style: 'text',
+				name: 'Switch\\n' + SRC_NAMES[id] + '\\nto preview',
+				style: {
 					text: 'Switch\\n' + SRC_NAMES[id] + '\\nto preview',
 					size: 'auto',
 					color: this.TEXT_COLOR,
 					bgcolor: this.BACKGROUND_COLOR_DEFAULT,
 				},
-				actions: [
+				steps: [
 					{
-						action: ACTION_SWITCH_PREVIEW,
-						options: {
-							source: id,
-						},
-					},
+						down: [
+							{
+								actionId: ACTION_SWITCH_PREVIEW,
+								options: {
+									source: id,
+								},
+							},
+						],
+						up: [],
+					}
 				],
 				feedbacks: [
 					{
-						type: FEEDBACK_PREVIEW_SRC,
+						feedbackId: FEEDBACK_PREVIEW_SRC,
 						options: {
 							source: id,
 						},
@@ -527,25 +539,31 @@ class instance extends instance_skel {
 
 		for (let id in SRC_NAMES) {
 			presets.push({
+				type: 'button',
 				category: 'Switch source on program',
-				bank: {
-					style: 'text',
+				name: 'Switch\\n' + SRC_NAMES[id] + '\\nto program',
+				style: {
 					text: 'Switch\\n' + SRC_NAMES[id] + '\\nto program',
 					size: 'auto',
 					color: this.TEXT_COLOR,
 					bgcolor: this.BACKGROUND_COLOR_DEFAULT,
 				},
-				actions: [
+				steps: [
 					{
-						action: ACTION_SWITCH_PROGRAM,
-						options: {
-							source: id,
-						},
+						down: [
+							{
+								actionId: ACTION_SWITCH_PROGRAM,
+								options: {
+									source: id,
+								},
+							},
+						],
+						up: [],
 					},
 				],
 				feedbacks: [
 					{
-						type: FEEDBACK_PROGRAM_SRC,
+						feedbackId: FEEDBACK_PROGRAM_SRC,
 						options: {
 							source: id,
 						},
@@ -559,9 +577,10 @@ class instance extends instance_skel {
 		}
 
 		presets.push({
+			type: 'button',
 			category: 'PIP',
-			bank: {
-				style: 'text',
+			name: 'PIP OFF',
+			style: {
 				text: 'PIP OFF',
 				size: 'auto',
 				color: this.TEXT_COLOR,
@@ -584,9 +603,10 @@ class instance extends instance_skel {
 		})
 		for (let id in PIP_MODE_NAMES) {
 			presets.push({
+				type: 'button',
 				category: 'PIP',
-				bank: {
-					style: 'text',
+				name: 'PIP ON\\n' + PIP_MODE_NAMES[id],
+				style: {
 					text: 'PIP ON\\n' + PIP_MODE_NAMES[id],
 					size: 'auto',
 					color: this.TEXT_COLOR,
@@ -615,9 +635,10 @@ class instance extends instance_skel {
 			})
 		}
 		presets.push({
+			type: 'button',
 			category: 'PIP',
-			bank: {
-				style: 'text',
+			name: 'is PIP ON?',
+			style: {
 				text: 'is PIP ON?',
 				size: 'auto',
 				color: this.TEXT_COLOR,
@@ -636,9 +657,10 @@ class instance extends instance_skel {
 		})
 
 		presets.push({
+			type: 'button',
 			category: 'Diagram',
-			bank: {
-				style: 'text',
+			name: 'Close diagram',
+			style: {
 				text: 'Close diagram',
 				size: 'auto',
 				color: this.TEXT_COLOR,
@@ -662,9 +684,10 @@ class instance extends instance_skel {
 		for (let type in DIAGRAM_TYPE_NAMES) {
 			for (let position in DIAGRAM_POSITION_NAMES) {
 				presets.push({
+					type: 'button',
 					category: 'Diagram',
-					bank: {
-						style: 'text',
+					name: DIAGRAM_TYPE_NAMES[type] + ' at ' + DIAGRAM_POSITION_NAMES[position],
+					style: {
 						text: DIAGRAM_TYPE_NAMES[type] + ' at ' + DIAGRAM_POSITION_NAMES[position],
 						size: 'auto',
 						color: this.TEXT_COLOR,
@@ -700,4 +723,4 @@ class instance extends instance_skel {
 	}
 }
 
-exports = module.exports = instance
+runEntrypoint(Tao1ProInstance, UpgradeScripts)
