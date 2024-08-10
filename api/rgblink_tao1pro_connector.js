@@ -10,22 +10,6 @@ SRC_NAMES[SRC_HDMI2] = 'HDMI 2'
 SRC_NAMES[SRC_UVC1] = 'UVC 1'
 SRC_NAMES[SRC_UVC2] = 'UVC 2'
 
-const PIP_OFF = 0
-const PIP_ON = 1
-const PIP_STATUES_NAMES = []
-PIP_STATUES_NAMES[PIP_OFF] = 'Normal mode (PIP OFF)'
-PIP_STATUES_NAMES[PIP_ON] = 'PIP mode (PIP ON)'
-
-const PIP_MODE_TOP_LEFT = 0
-const PIP_MODE_TOP_RIGHT = 1
-const PIP_MODE_BOTTOM_LEFT = 2
-const PIP_MODE_BOTTOM_RIGHT = 3
-const PIP_MODE_NAMES = []
-PIP_MODE_NAMES[PIP_MODE_TOP_LEFT] = 'Top left'
-PIP_MODE_NAMES[PIP_MODE_TOP_RIGHT] = 'Top right'
-PIP_MODE_NAMES[PIP_MODE_BOTTOM_LEFT] = 'Bottom left'
-PIP_MODE_NAMES[PIP_MODE_BOTTOM_RIGHT] = 'Bottom right'
-
 const DIAGRAM_TYPE_HISTOGRAM = 0
 const DIAGRAM_TYPE_VECTOR_DIAGRAM = 1
 const DIAGRAM_TYPE_WAVEFORM_LUMINANCE = 2
@@ -63,8 +47,6 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		previewSourceMainChannel: undefined,
 		programSourceMainChannel: undefined,
 		programSourceSubChannel: undefined,
-		pipStatus: undefined,
-		pipMode: undefined,
 		diagram: {
 			type: undefined,
 			visibility: undefined,
@@ -124,23 +106,6 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		}
 	}
 
-	//THIS FUNCTION MAKES TAO 1pro useless, unless unplug all HDMI, reboot and then factory reset
-	sendSetPIPStatusAndMode(/*pipStatus, pipMode*/) {
-		this.myDebug('PIP function disabled by developer')
-		return
-		// if (pipStatus == PIP_OFF) {
-		// 	this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_OFF), '00', '00')
-		// } else if (pipStatus == PIP_ON) {
-		// 	if (this.isValidPipMode(pipMode)) {
-		// 		this.sendCommand('68', 'AA', this.byteToTwoSignHex(PIP_ON), this.byteToTwoSignHex(pipMode), '00')
-		// 	} else {
-		// 		this.myDebug('Wrong PIP mode:' + pipMode)
-		// 	}
-		// } else {
-		// 	this.myDebug('Wrong PIP status:' + pipStatus)
-		// }
-	}
-
 	sendSetDiagramState(visibility, type, position) {
 		if (
 			this.isDiagramTypeValid(type) &&
@@ -163,10 +128,6 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		return src in SRC_NAMES
 	}
 
-	isValidPipMode(pipMode) {
-		return pipMode in PIP_MODE_NAMES
-	}
-
 	isDiagramTypeValid(type) {
 		return type in DIAGRAM_TYPE_NAMES
 	}
@@ -183,25 +144,7 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		let redeableMsg = [ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4].join(' ')
 
 		try {
-			if (CMD == '68') {
-				if (DAT1 == 'AA') {
-					//3.2.30 Display mode:
-					let pipS = parseInt(DAT2)
-					if (pipS == PIP_OFF) {
-						this.emitConnectionStatusOK()
-						this.deviceStatus.pipStatus = PIP_OFF
-						return this.logFeedback(redeableMsg, 'PIP is OFF ')
-					} else if (pipS == PIP_ON) {
-						let pipM = parseInt(DAT3)
-						if (this.isValidPipMode(pipM)) {
-							this.emitConnectionStatusOK()
-							this.deviceStatus.pipStatus = PIP_ON
-							this.deviceStatus.pipMode = pipM
-							return this.logFeedback(redeableMsg, 'PIP is ON, mode:' + PIP_MODE_NAMES[pipM])
-						}
-					}
-				}
-			} else if (CMD == '78') {
+			if (CMD == '78') {
 				if (DAT1 == '00') {
 					// 3.2.18 Switch over the pvw screen input source
 					let src = parseInt(DAT2)
@@ -222,30 +165,6 @@ class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 						return this.logFeedback(
 							redeableMsg,
 							'Switch over the program screen to input source ' + SRC_NAMES[this.deviceStatus.programSourceMainChannel]
-						)
-					}
-				} else if (DAT1 == '02') {
-					// 3.2.20
-					let mode = parseInt(DAT2)
-					if (mode == PIP_OFF) {
-						this.emitConnectionStatusOK()
-						this.deviceStatus.pipStatus = mode
-						this.deviceStatus.programSourceMainChannel = parseInt(DAT3)
-						return this.logFeedback(
-							redeableMsg,
-							'PIP is OFF, with main channel ' + SRC_NAMES[this.deviceStatus.programSourceMainChannel]
-						)
-					} else if (mode == PIP_ON) {
-						this.emitConnectionStatusOK()
-						this.deviceStatus.pipStatus = mode
-						this.deviceStatus.programSourceMainChannel = parseInt(DAT3)
-						this.deviceStatus.programSourceSubChannel = parseInt(DAT3)
-						return this.logFeedback(
-							redeableMsg,
-							'PIP is ON, with main channel ' +
-							SRC_NAMES[this.deviceStatus.programSourceMainChannel] +
-							' and sub-channel ' +
-							SRC_NAMES[this.deviceStatus.programSourceSubChannel]
 						)
 					}
 				}
@@ -296,15 +215,7 @@ module.exports.SRC_UVC1 = SRC_UVC1
 module.exports.SRC_UVC2 = SRC_UVC2
 module.exports.SRC_NAMES = SRC_NAMES
 
-module.exports.PIP_OFF = PIP_OFF
-module.exports.PIP_ON = PIP_ON
-module.exports.PIP_STATUES_NAMES = PIP_STATUES_NAMES
-
-module.exports.PIP_MODE_TOP_LEFT = PIP_MODE_TOP_LEFT
-module.exports.PIP_MODE_TOP_RIGHT = PIP_MODE_TOP_RIGHT
-module.exports.PIP_MODE_BOTTOM_LEFT = PIP_MODE_BOTTOM_LEFT
-module.exports.PIP_MODE_BOTTOM_RIGHT = PIP_MODE_BOTTOM_RIGHT
-module.exports.PIP_MODE_NAMES = PIP_MODE_NAMES
+// Tao1 pro does not support PIP module for new version
 
 module.exports.DIAGRAM_TYPE_HISTOGRAM = DIAGRAM_TYPE_HISTOGRAM
 module.exports.DIAGRAM_TYPE_VECTOR_DIAGRAM = DIAGRAM_TYPE_VECTOR_DIAGRAM

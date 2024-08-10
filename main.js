@@ -1,11 +1,13 @@
 /*
-maybe in future
-* support DATABLOCK in API + validate checksum and length
 
 usefull commands
 * yarn format
 * yarn headless
 * yarn dev-headless
+
+TODO
+* remove PIP, which not work  (after double check commands with api)
+* remove diagrams, which also no works (after double check commands with api) (volkmar video shows that it's not working at all)
 
 */
 
@@ -17,11 +19,6 @@ const {
 	RGBLinkTAO1ProConnector,
 	SRC_HDMI1,
 	SRC_NAMES,
-	PIP_OFF,
-	PIP_MODE_NAMES,
-	PIP_STATUES_NAMES,
-	PIP_ON,
-	PIP_MODE_TOP_LEFT,
 	DIAGRAM_VISIBILITY_OFF,
 	DIAGRAM_TYPE_HISTOGRAM,
 	DIAGRAM_POSITION_MIDDLE_DEFAULT,
@@ -36,33 +33,18 @@ var DEFAULT_1PRO_PORT = 5560
 
 const ACTION_SWITCH_PREVIEW = 'switch_preview'
 const ACTION_SWITCH_PROGRAM = 'switch_program'
-const ACTION_PIP_OFF = 'pip_off'
-const ACTION_PIP_ON_WITH_MODE = 'pip_on_with_mode'
 const ACTION_DIAGRAM_HIDE = 'diagram_hide'
 const ACTION_DIAGRAM_SHOW = 'diagram_show'
 const ACTION_CUSTOM_COMMAND = 'custom_command'
 
 const FEEDBACK_PREVIEW_SRC = 'feedback_preview'
 const FEEDBACK_PROGRAM_SRC = 'feedback_program'
-const FEEDBACK_PIP_OFF = 'feedback_pip_off'
-const FEEDBACK_PIP_ON_SELECTED_MODE = 'feedback_pip_on_with_mode'
-const FEEDBACK_PIP_ON_ANY_MODE = 'feedback_pip_on_any_mode'
 const FEEDBACK_DIAGRAM_HIDDEN = 'feedback_diagram_hidden'
 const FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS = 'feedback_diagram_visible_with_settings'
 
 const CHOICES_PART_SOURCES = []
 for (let id in SRC_NAMES) {
 	CHOICES_PART_SOURCES.push({ id: id, label: SRC_NAMES[id] })
-}
-
-const CHOICES_PART_PIP_STATUS = []
-for (let id in PIP_STATUES_NAMES) {
-	CHOICES_PART_PIP_STATUS.push({ id: id, label: PIP_STATUES_NAMES[id] })
-}
-
-const CHOICES_PART_PIP_MODE = []
-for (let id in PIP_MODE_NAMES) {
-	CHOICES_PART_PIP_MODE.push({ id: id, label: PIP_MODE_NAMES[id] })
 }
 
 const CHOICES_PART_DIAGRAM_TYPE = []
@@ -213,32 +195,6 @@ class Tao1ProInstance extends InstanceBase {
 			},
 		}
 
-		actions[ACTION_PIP_OFF] = {
-			name: 'Set PIP OFF ',
-			options: [],
-			callback: async (/*action , bank*/) => {
-				this.apiConnector.sendSetPIPStatusAndMode(PIP_OFF)
-			},
-		}
-
-		actions[ACTION_PIP_ON_WITH_MODE] = {
-			name: 'Set PIP ON',
-			options: [
-				{
-					type: 'dropdown',
-					label: 'PIP mode',
-					id: 'pipMode',
-					default: PIP_MODE_TOP_LEFT,
-					tooltip: 'Choose corner for second stream',
-					choices: CHOICES_PART_PIP_MODE,
-					minChoicesForSearch: 0,
-				},
-			],
-			callback: async (action /*, bank*/) => {
-				this.apiConnector.sendSetPIPStatusAndMode(PIP_ON, action.options.pipMode)
-			},
-		}
-
 		actions[ACTION_DIAGRAM_HIDE] = {
 			name: 'Close diagram',
 			options: [],
@@ -307,9 +263,6 @@ class Tao1ProInstance extends InstanceBase {
 	checkAllFeedbacks() {
 		this.checkFeedbacks(FEEDBACK_PREVIEW_SRC)
 		this.checkFeedbacks(FEEDBACK_PROGRAM_SRC)
-		this.checkFeedbacks(FEEDBACK_PIP_OFF)
-		this.checkFeedbacks(FEEDBACK_PIP_ON_SELECTED_MODE)
-		this.checkFeedbacks(FEEDBACK_PIP_ON_ANY_MODE)
 		this.checkFeedbacks(FEEDBACK_DIAGRAM_HIDDEN)
 		this.checkFeedbacks(FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS)
 	}
@@ -386,58 +339,6 @@ class Tao1ProInstance extends InstanceBase {
 			],
 			callback: (feedback) => {
 				return feedback.options.source == this.apiConnector.deviceStatus.programSourceMainChannel
-			}
-		}
-
-		feedbacks[FEEDBACK_PIP_OFF] = {
-			type: 'boolean',
-			name: 'PIP is OFF',
-			description: 'Feedback, if PIP is OFF',
-			style: {
-				color: combineRgb(255, 255, 255),
-				bgcolor: this.BACKGROUND_COLOR_RED,
-			},
-			options: [],
-			callback: (/*feedback*/) => {
-				return this.apiConnector.deviceStatus.pipStatus == PIP_OFF
-			}
-		}
-
-		feedbacks[FEEDBACK_PIP_ON_ANY_MODE] = {
-			type: 'boolean',
-			name: 'PIP is ON, in any mode',
-			description: 'Feedback, if PIP is ON, in any PIP mode',
-			style: {
-				color: combineRgb(255, 255, 255),
-				bgcolor: this.BACKGROUND_COLOR_RED,
-			},
-			options: [],
-			callback: (/*feedback*/) => {
-				return this.apiConnector.deviceStatus.pipStatus == PIP_ON
-			}
-		}
-
-		feedbacks[FEEDBACK_PIP_ON_SELECTED_MODE] = {
-			type: 'boolean',
-			name: 'PIP is ON, with selected mode',
-			description: 'Feedback, if PIP is ON and selected PIP mode is used',
-			style: {
-				color: combineRgb(255, 255, 255),
-				bgcolor: this.BACKGROUND_COLOR_RED,
-			},
-			options: [
-				{
-					type: 'dropdown',
-					label: 'PIP mode',
-					id: 'pipMode',
-					default: PIP_MODE_TOP_LEFT,
-					tooltip: 'Choose corner for second stream',
-					choices: CHOICES_PART_PIP_MODE,
-					minChoicesForSearch: 0,
-				},
-			],
-			callback: (feedback) => {
-				return this.apiConnector.deviceStatus.pipStatus == PIP_ON && feedback.options.pipMode == this.apiConnector.deviceStatus.pipMode
 			}
 		}
 
@@ -578,86 +479,6 @@ class Tao1ProInstance extends InstanceBase {
 
 		presets.push({
 			type: 'button',
-			category: 'PIP',
-			name: 'PIP OFF',
-			style: {
-				text: 'PIP OFF',
-				size: 'auto',
-				color: this.TEXT_COLOR,
-				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
-			},
-			actions: [
-				{
-					action: ACTION_PIP_OFF,
-				},
-			],
-			feedbacks: [
-				{
-					type: FEEDBACK_PIP_OFF,
-					style: {
-						color: this.TEXT_COLOR,
-						bgcolor: this.BACKGROUND_COLOR_RED,
-					},
-				},
-			],
-		})
-		for (let id in PIP_MODE_NAMES) {
-			presets.push({
-				type: 'button',
-				category: 'PIP',
-				name: 'PIP ON\\n' + PIP_MODE_NAMES[id],
-				style: {
-					text: 'PIP ON\\n' + PIP_MODE_NAMES[id],
-					size: 'auto',
-					color: this.TEXT_COLOR,
-					bgcolor: this.BACKGROUND_COLOR_DEFAULT,
-				},
-				actions: [
-					{
-						action: ACTION_PIP_ON_WITH_MODE,
-						options: {
-							pipMode: id,
-						},
-					},
-				],
-				feedbacks: [
-					{
-						type: FEEDBACK_PIP_ON_SELECTED_MODE,
-						options: {
-							pipMode: id,
-						},
-						style: {
-							color: this.TEXT_COLOR,
-							bgcolor: this.BACKGROUND_COLOR_RED,
-						},
-					},
-				],
-			})
-		}
-		presets.push({
-			type: 'button',
-			category: 'PIP',
-			name: 'is PIP ON?',
-			style: {
-				text: 'is PIP ON?',
-				size: 'auto',
-				color: this.TEXT_COLOR,
-				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
-			},
-			actions: [],
-			feedbacks: [
-				{
-					type: FEEDBACK_PIP_ON_ANY_MODE,
-					style: {
-						color: this.TEXT_COLOR,
-						bgcolor: this.BACKGROUND_COLOR_RED,
-					},
-				},
-			],
-		})
-
-		presets.push({
-			type: 'button',
 			category: 'Diagram',
 			name: 'Close diagram',
 			style: {
@@ -666,14 +487,19 @@ class Tao1ProInstance extends InstanceBase {
 				color: this.TEXT_COLOR,
 				bgcolor: this.BACKGROUND_COLOR_DEFAULT,
 			},
-			actions: [
+			steps: [
 				{
-					action: ACTION_DIAGRAM_HIDE,
+					down: [
+						{
+							actionId: ACTION_DIAGRAM_HIDE,
+						},
+					],
+					up: [],
 				},
 			],
 			feedbacks: [
 				{
-					type: FEEDBACK_DIAGRAM_HIDDEN,
+					feedbackId: FEEDBACK_DIAGRAM_HIDDEN,
 					style: {
 						color: this.TEXT_COLOR,
 						bgcolor: this.BACKGROUND_COLOR_RED,
@@ -693,18 +519,23 @@ class Tao1ProInstance extends InstanceBase {
 						color: this.TEXT_COLOR,
 						bgcolor: this.BACKGROUND_COLOR_DEFAULT,
 					},
-					actions: [
+					steps: [
 						{
-							action: ACTION_DIAGRAM_SHOW,
-							options: {
-								type: type,
-								position: position,
-							},
+							down: [
+								{
+									actionId: ACTION_DIAGRAM_SHOW,
+									options: {
+										type: type,
+										position: position,
+									},
+								},
+							],
+							up: [],
 						},
 					],
 					feedbacks: [
 						{
-							type: FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS,
+							feedbackId: FEEDBACK_DIAGRAM_VISIBLE_WITH_SETTINGS,
 							options: {
 								type: type,
 								position: position,
