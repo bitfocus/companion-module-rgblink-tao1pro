@@ -5,6 +5,8 @@ const config: Config.InitialOptions = {
 	preset: 'ts-jest',
 	testEnvironment: 'node',
 	verbose: true,
-	// automock: true,
+	moduleNameMapper: {
+		'^(\\.{1,2}/.*)\\.js$': '$1', // mapowanie dla plików .js
+	},
 }
 export default config
