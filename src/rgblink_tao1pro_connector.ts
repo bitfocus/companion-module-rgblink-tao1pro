@@ -1,6 +1,6 @@
 import { RGBLinkApiConnector, ApiConfig, PollingCommand, Hex } from 'companion-rgblink-openapi-connector'
 
-export const SRC_HDMI1 = 0
+export const SRC_HDMI1 = 0 as const
 export const SRC_HDMI2 = 1
 export const SRC_UVC1 = 2
 export const SRC_UVC2 = 3

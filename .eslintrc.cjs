@@ -5,4 +5,5 @@ module.exports = {
 		'@typescript-eslint/no-for-in-array': "warn",
 		'@typescript-eslint/promise-function-async':'off'
 	},
+	
 }
