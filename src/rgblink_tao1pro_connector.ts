@@ -40,6 +40,16 @@ DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_BOTTOM_RIGHT] = 'Bottom right'
 DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_TOP_LEFT] = 'Top left'
 DIAGRAM_POSITION_NAMES[DIAGRAM_POSITION_TOP_RIGHT] = 'Top right'
 
+export const INPUT_TYPE_MJPEG = 0
+export const INPUT_TYPE_RAW_VIDEO = 1
+export const INPUT_TYPE_H264 = 2
+export type Tao1InputType = 0 | 1 | 2
+
+export const BLUETOOTH_STATUS_0_ = 0
+export const BLUETOOTH_STATUS_1_PAIRED = 1
+export const BLUETOOTH_STATUS_2_CONNECTED = 2
+export type Tao1BlootoothStatusType = 0 | 1 | 2
+
 const pollingCommands: PollingCommand[] = [
 	new PollingCommand('78', '02', '00', '00', '00'), // 3.2.20 Read the master and secondary channel
 ]
@@ -50,11 +60,44 @@ class Tao1Diagram {
 	position: number | undefined
 }
 
+class Tao1InputStatus {
+	type: Tao1InputType | undefined
+	width: number | undefined
+	height: number | undefined
+	frequency: number | undefined
+}
+
+class Tao1BluetoothSingleDeviceStatus {
+	constructor(hexAddres: string, name: string, status: Tao1BlootoothStatusType) {
+		this.hexAddres = hexAddres
+		this.name = name
+		this.status = status
+	}
+	hexAddres: string
+	name: string
+	status: Tao1BlootoothStatusType
+}
+
+class Tao1BluetoothStatus {
+	numOfDevices: number | undefined
+	devices: Tao1BluetoothSingleDeviceStatus[] = []
+}
+
 class Tao1DeviceStatus {
+	constructor() {
+		this.inputs[SRC_HDMI1] = new Tao1InputStatus()
+		this.inputs[SRC_HDMI2] = new Tao1InputStatus()
+		this.inputs[SRC_UVC1] = new Tao1InputStatus()
+		this.inputs[SRC_UVC1] = new Tao1InputStatus()
+	}
+
 	previewSourceMainChannel: number | undefined
 	programSourceMainChannel: number | undefined
 	programSourceSubChannel: number | undefined
 	diagram: Tao1Diagram = new Tao1Diagram()
+	inputs: Tao1InputStatus[] = []
+	recordingFileName: string | undefined
+	bluetooth: Tao1BluetoothStatus = new Tao1BluetoothStatus()
 }
 
 export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
