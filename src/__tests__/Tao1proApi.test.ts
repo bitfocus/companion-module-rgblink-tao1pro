@@ -3,6 +3,7 @@ import {
 	INPUT_TYPE_H264,
 	INPUT_TYPE_MJPEG,
 	INPUT_TYPE_RAW_VIDEO,
+	NDI_CONNECTION_MODE_UNICAST,
 	RGBLinkTAO1ProConnector,
 	SRC_HDMI1,
 	SRC_HDMI2,
@@ -24,7 +25,6 @@ afterEach(() => {
 // The TAO1PRO central control protocol CMD uses 0xf0 (write) and 0 x f) to represent the 0xf1 (read) of long commands;
 
 test('API properly reads feedback 3.2.1 Read the HDMI and UVC Wide and Higher Information (0xF1 0xB3)', async () => {
-	// given connectore setted up with enabled polling
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
 	api.onDataReceived(Buffer.from('<F004B' + 'F1' + 'B3' + '01' + '0700' + 'F7>01 80 07 38 04 3c 00'))
@@ -57,31 +57,30 @@ test('API properly reads feedback 3.2.1 Read the HDMI and UVC Wide and Higher In
 })
 
 test('API properly reads feedback 3.2.2 Setting Wide information for HDMI and UVC (0xF0 0xB3)', async () => {
-	// given connectore setted up with enabled polling
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 	api.onDataReceived(Buffer.from('<F0046F0B3020800F3>'))
 	// noting to check/write?
 	// is it real feedback for command <T0046f0b3020800f3>01 00 00 05 d0 02 1e f6    ???
+	fail()
 })
 
 test('API properly reads feedback 3.2.3 Set up the rtmp push flow switch and url (0xF0 0xB4)', async () => {
-	// given connectore setted up with enabled polling
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 	api.onDataReceived(Buffer.from('<F0056F0B40021001B>'))
 	// noting to check/write?
 	// is it real feedback for command <T0056f0b40021001b>00 22 72 74 6d 70 3a 2f 2f 31 39 32 2e 31 36 38 2e 30 2e 37 36 2f 6c 69 76 65 2f 74 65 73 74 22 cf    ???
+	fail()
 })
 
 test('API properly reads feedback 3.2.4 Set the code rate (0xF0 0xB5)', async () => {
-	// given connectore setted up with enabled polling
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 	api.onDataReceived(Buffer.from('<F0035f0b5000500df>'))
 	// noting to check/write?
 	// is it real feedback for command <T0035f0b5000500df>00 18 70 17 9f    ???
+	fail()
 })
 
 test('API properly reads feedback 3.2.5 Read the file name being recorded (0xF1 0x45)', async () => {
-	// given connectore setted up with enabled polling
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
 	api.onDataReceived(
@@ -94,7 +93,6 @@ test('API properly reads feedback 3.2.5 Read the file name being recorded (0xF1 
 })
 
 test('API properly reads feedback 3.2.6 Bluetooth access to scanning device information (0xF1 0xB4)', async () => {
-	// given connectore setted up with enabled polling
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
 	api.onDataReceived(
@@ -119,8 +117,114 @@ test('API properly reads feedback 3.2.6 Bluetooth access to scanning device info
 	expect(api.deviceStatus.bluetooth.devices[2].name).toEqual('69-AF-FC-D4-F7-D6')
 })
 
+test('API properly reads feedback 3.2.7 Bluetooth Connect to a device (0xF0 0xB6)', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0021f0b6000000c7>ff ff 12 04 4f 9d 00'))
+	await new Promise((r) => setTimeout(r, 1))
+	// what should be tested?
+	fail()
+})
+
+test('API properly reads feedback 3.2.8 Bluetooth Disconnect a device (0xF0 0xB7)', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F002af0b7000000d1>ff ff 12 04 4f 9d 00'))
+	await new Promise((r) => setTimeout(r, 1))
+	// what should be tested?
+	fail()
+})
+
+test('API properly reads feedback 3.2.9 NDI Group Name Read (0xF1 0xB8 0x00)', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0045f1b8000700f5>50 75 62 6c 69 63 5f'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.groupName).toEqual('Public')
+})
+
+test('API properly reads feedback 3.2.10 NDI Group Name Modification (0xF0 0xB8 0x00)', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F004df0b8000800fd>'))
+	await new Promise((r) => setTimeout(r, 1))
+	// what should be tested?
+	fail()
+})
+
+test('API properly reads feedback 3.2.11 NDI channel name read', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0045f1b8010700f6>50 75 62 6c 69 63 5f'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.channelName).toEqual('Public')
+})
+
+test('API properly reads feedback 3.2.12 NDI channel name modification', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F004df0b8010800fe>'))
+	await new Promise((r) => setTimeout(r, 1))
+	// what should be tested?
+	fail()
+})
+
+test('API properly reads feedback 3.2.13 NDI device name read', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0045f1b8020700f5>50 75 62 6c 69 63 f7'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.deviceName).toEqual('Public')
+})
+
+test('API properly reads feedback 3.2.14 NDI device name modification', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F004df0b8020800fF>'))
+	await new Promise((r) => setTimeout(r, 1))
+	// what should be tested?
+	fail()
+})
+
+test('API properly reads feedback 3.2.15 Read the NDI connection mode and ttl, addr, and netmask', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(
+		Buffer.from('<F0000' + 'F1' + 'B8' + '03' + '0A00B6>00 7F ' + 'C0 A8 00 01' + 'FF FF FF 00' + 'E5')
+	)
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.connection.mode).toEqual(NDI_CONNECTION_MODE_UNICAST)
+	expect(api.deviceStatus.ndi.connection.ttl).toEqual(127)
+	expect(api.deviceStatus.ndi.connection.ipHex).toEqual('C0A80001')
+	expect(api.deviceStatus.ndi.connection.netMaskHex).toEqual('FFFFFF00')
+})
+
+test('API properly reads feedback 3.2.16 Set up the NDI connection mode and ttl, addr, netmask', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'F1' + 'B8' + '03' + '0A00B6>')) // is it real command
+	await new Promise((r) => setTimeout(r, 1))
+	// what should be tested?
+	fail()
+})
+
+test('API properly reads feedback 3.2.17 Read the NDI resolution, frame rate, code rate, and audio format', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(
+		Buffer.from('<F0000' + 'F1' + 'B8' + '04' + '0A00B6>' + '00 04 ' + '00 03 ' + '32 18 ' + ' E8 03 F4 01 ' + '31')
+		// 1024 x 786, 50hz, 24 fps, 1000 bitrate, 500 sample rate
+	)
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.encodingSettings.width).toEqual(1024)
+	expect(api.deviceStatus.ndi.encodingSettings.height).toEqual(768)
+	expect(api.deviceStatus.ndi.encodingSettings.frequency).toEqual(50)
+	expect(api.deviceStatus.ndi.encodingSettings.fps).toEqual(24)
+	expect(api.deviceStatus.ndi.encodingSettings.bitrate).toEqual(1000)
+	expect(api.deviceStatus.ndi.encodingSettings.sampleRate).toEqual(500)
+})
+
 test('API properly reads feedback 3.2.18 (preview input) ', async () => {
-	// given connectore setted up with enabled polling
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
 	api.onDataReceived(Buffer.from('<F0000' + '78' + '00' + '00' + '000078>'))
@@ -138,4 +242,24 @@ test('API properly reads feedback 3.2.18 (preview input) ', async () => {
 	api.onDataReceived(Buffer.from('<F0000' + '78' + '00' + '03' + '00007B>'))
 	await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.previewSourceMainChannel).toEqual(SRC_UVC2)
+})
+
+test('API properly reads feedback 3.2.19 Switch over the pgm screen input source', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '78' + '01' + '00' + '000079>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.programSourceMainChannel).toEqual(SRC_HDMI1)
+
+	api.onDataReceived(Buffer.from('<F0000' + '78' + '01' + '01' + '00007A>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.programSourceMainChannel).toEqual(SRC_HDMI2)
+
+	api.onDataReceived(Buffer.from('<F0000' + '78' + '01' + '02' + '00007B>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.programSourceMainChannel).toEqual(SRC_UVC1)
+
+	api.onDataReceived(Buffer.from('<F0000' + '78' + '01' + '03' + '00007C>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.programSourceMainChannel).toEqual(SRC_UVC2)
 })

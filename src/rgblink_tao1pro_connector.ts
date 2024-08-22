@@ -50,6 +50,10 @@ export const BLUETOOTH_STATUS_1_PAIRED = 1
 export const BLUETOOTH_STATUS_2_CONNECTED = 2
 export type Tao1BlootoothStatusType = 0 | 1 | 2
 
+export const NDI_CONNECTION_MODE_UNICAST = 0
+export const NDI_CONNECTION_MODE_MULTICAST = 1
+export type Tao1NDIConnectionMode = 0 | 1
+
 const pollingCommands: PollingCommand[] = [
 	new PollingCommand('78', '02', '00', '00', '00'), // 3.2.20 Read the master and secondary channel
 ]
@@ -83,6 +87,30 @@ class Tao1BluetoothStatus {
 	devices: Tao1BluetoothSingleDeviceStatus[] = []
 }
 
+class Tao1NDIConnectionStatus {
+	mode: Tao1NDIConnectionMode | undefined
+	ttl: number | undefined
+	ipHex: string | undefined
+	netMaskHex: string | undefined
+}
+
+class Tao1NDIEncodingSettings {
+	width: number | undefined
+	height: number | undefined
+	frequency: number | undefined
+	fps: number | undefined
+	bitrate: number | undefined
+	sampleRate: number | undefined
+}
+
+class Tao1NDIStatus {
+	groupName: string | undefined
+	channelName: string | undefined
+	deviceName: string | undefined
+	connection: Tao1NDIConnectionStatus = new Tao1NDIConnectionStatus()
+	encodingSettings: Tao1NDIEncodingSettings = new Tao1NDIEncodingSettings()
+}
+
 class Tao1DeviceStatus {
 	constructor() {
 		this.inputs[SRC_HDMI1] = new Tao1InputStatus()
@@ -98,6 +126,7 @@ class Tao1DeviceStatus {
 	inputs: Tao1InputStatus[] = []
 	recordingFileName: string | undefined
 	bluetooth: Tao1BluetoothStatus = new Tao1BluetoothStatus()
+	ndi: Tao1NDIStatus = new Tao1NDIStatus()
 }
 
 export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
