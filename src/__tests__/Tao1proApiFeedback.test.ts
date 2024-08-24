@@ -2,6 +2,18 @@ import {
 	BATTERY_STATUS_0_NOT_PLUGEED,
 	BATTERY_STATUS_5_OF_5,
 	BLUETOOTH_STATUS_0_,
+	DIAGRAM_POSITION_BOTTOM_LEFT,
+	DIAGRAM_POSITION_BOTTOM_RIGHT,
+	DIAGRAM_POSITION_MIDDLE_DEFAULT,
+	DIAGRAM_POSITION_MIDDLE_MAXIMUM,
+	DIAGRAM_POSITION_TOP_LEFT,
+	DIAGRAM_POSITION_TOP_RIGHT,
+	DIAGRAM_TYPE_HISTOGRAM,
+	DIAGRAM_TYPE_VECTOR_DIAGRAM,
+	DIAGRAM_TYPE_WAVEFORM_LUMINANCE,
+	DIAGRAM_TYPE_WAVEFORM_RGB,
+	DIAGRAM_VISIBILITY_OFF,
+	DIAGRAM_VISIBILITY_OPEN,
 	INPUT_AUDIO_ANALOG,
 	INPUT_AUDIO_HDMI1,
 	INPUT_AUDIO_HDMI2,
@@ -9,6 +21,10 @@ import {
 	INPUT_TYPE_MJPEG,
 	INPUT_TYPE_RAW_VIDEO,
 	NDI_CONNECTION_MODE_UNICAST,
+	NDI_ENCODING_0_H264,
+	NDI_ENCODING_1_YUV,
+	NDI_ENCODING_2_H265,
+	NDI_ENCODING_3_NV12,
 	RGBLinkTAO1ProConnector,
 	SRC_HDMI1,
 	SRC_HDMI2,
@@ -454,4 +470,166 @@ test('API properly reads feedback 3.2.42 NDI switch', async () => {
 	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '01' + '01' + '00' + '00' + 'C8>'))
 	await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.ndi.switchNDIEnabled).toEqual(false)
+})
+
+test('API properly reads feedback 3.2.43 NDI protocol version FULL NDI / NDI | HX', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '02' + '00' + '00' + '00' + 'C8>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.encodingSettings.encoding).toEqual(NDI_ENCODING_0_H264)
+	expect(api.deviceStatus.ndi.encodingSettings.encodingQuality).toEqual(undefined)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '03' + '01' + '00' + '00' + 'CA>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.encodingSettings.encoding).toEqual(NDI_ENCODING_1_YUV)
+	expect(api.deviceStatus.ndi.encodingSettings.encodingQuality).toEqual(undefined)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '03' + '02' + '48' + '00' + '13>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.encodingSettings.encoding).toEqual(NDI_ENCODING_2_H265)
+	expect(api.deviceStatus.ndi.encodingSettings.encodingQuality).toEqual(75)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '03' + '03' + '00' + '00' + 'CC>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.encodingSettings.encoding).toEqual(NDI_ENCODING_3_NV12)
+	expect(api.deviceStatus.ndi.encodingSettings.encodingQuality).toEqual(undefined)
+})
+
+test('API properly reads feedback 3.2.44 Waveform diagram, vector diagram, and histogram', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C7' + '00' + '00' + '00' + '00' + 'C7>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_TYPE_HISTOGRAM)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_VISIBILITY_OFF)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_POSITION_MIDDLE_DEFAULT)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C7' + '01' + '01' + '01' + '01' + 'CB>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_TYPE_VECTOR_DIAGRAM)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_VISIBILITY_OPEN)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_POSITION_MIDDLE_MAXIMUM)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C7' + '00' + '02' + '00' + '02' + 'CB>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_TYPE_WAVEFORM_LUMINANCE)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_VISIBILITY_OFF)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_POSITION_BOTTOM_LEFT)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C7' + '01' + '03' + '01' + '03' + 'CF>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_TYPE_WAVEFORM_RGB)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_VISIBILITY_OPEN)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_POSITION_BOTTOM_RIGHT)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C7' + '01' + '03' + '01' + '04' + 'D0>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_TYPE_WAVEFORM_RGB)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_VISIBILITY_OPEN)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_POSITION_TOP_LEFT)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C7' + '01' + '03' + '01' + '05' + 'D1>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_TYPE_WAVEFORM_RGB)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_VISIBILITY_OPEN)
+	expect(api.deviceStatus.diagram.type).toEqual(DIAGRAM_POSITION_TOP_RIGHT)
+})
+
+test('API properly reads feedback 3.2.45 Is the input source disconnected', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '01' + '01' + '00' + '00' + 'D2>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.inputs[SRC_HDMI1].connected).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '01' + '02' + '00' + '00' + 'D3>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.inputs[SRC_HDMI2].connected).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '01' + '01' + '00' + '00' + 'D2>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.inputs[SRC_UVC1].connected).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '01' + '02' + '00' + '00' + 'D3>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.inputs[SRC_UVC2].connected).toEqual(false)
+})
+
+test('API properly reads feedback 3.2.46 HDMI resolution change', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '02' + '01' + '00' + '00' + 'D3>'))
+	await new Promise((r) => setTimeout(r, 1))
+	// what should I test?
+	fail()
+})
+
+test('API properly reads feedback 3.2.47 u disk inserted', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '03' + '00' + '00' + '00' + 'D3>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.uDiskInserted).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '03' + '01' + '00' + '00' + 'D4>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.uDiskInserted).toEqual(true)
+})
+
+test('API properly reads feedback 3.2.48 Push-current status', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '04' + '01' + '04' + '00' + 'D9>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.pushStatusHex).toEqual('04')
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '04' + '00' + '04' + '00' + 'D8>'))
+	await new Promise((r) => setTimeout(r, 1))
+	// what should I test
+	fail()
+})
+
+test('API properly reads feedback 3.2.49 Power supply typec access status', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '05' + '00' + '00' + '00' + 'D5>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.powerSupplyByUSBc).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '05' + '01' + '00' + '00' + 'D6>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.powerSupplyByUSBc).toEqual(true)
+})
+
+test('API properly reads feedback 3.2.50 Network port access status', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '06' + '00' + '00' + '00' + 'D6>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.networkStatus.connected).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '06' + '01' + '00' + '00' + 'D7>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.networkStatus.connected).toEqual(true)
+})
+
+test('API properly reads feedback 3.2.51 Operation Bluetooth handle click the input source number:', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '08' + '00' + '00' + '00' + 'D8>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.previewSourceMainChannel).toEqual(SRC_HDMI1)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '08' + '01' + '00' + '00' + 'D9>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.previewSourceMainChannel).toEqual(SRC_HDMI2)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '08' + '02' + '00' + '00' + 'DA>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.previewSourceMainChannel).toEqual(SRC_UVC1)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '08' + '03' + '00' + '00' + 'DB>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.previewSourceMainChannel).toEqual(SRC_UVC2)
 })

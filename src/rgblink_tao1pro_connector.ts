@@ -67,8 +67,15 @@ export const INPUT_AUDIO_HDMI1 = 1
 export const INPUT_AUDIO_HDMI2 = 2
 export type Tao1AudioInput = 0 | 1 | 2
 
+export const NDI_ENCODING_0_H264 = 0
+export const NDI_ENCODING_1_YUV = 1
+export const NDI_ENCODING_2_H265 = 2
+export const NDI_ENCODING_3_NV12 = 3
+export type Tao1NDIEncoding = 0 | 1 | 2 | 3
+
 const pollingCommands: PollingCommand[] = [
 	new PollingCommand('78', '02', '00', '00', '00'), // 3.2.20 Read the master and secondary channel
+	// TAO1PRO Active Reporting command: <T0000D005000700DC>
 ]
 
 class Tao1Diagram {
@@ -82,6 +89,7 @@ class Tao1InputStatus {
 	width: number | undefined
 	height: number | undefined
 	frequency: number | undefined
+	connected: true | false | undefined
 }
 
 class Tao1BluetoothSingleDeviceStatus {
@@ -115,6 +123,8 @@ class Tao1NDIEncodingSettings {
 	fps: number | undefined
 	bitrate: number | undefined
 	sampleRate: number | undefined
+	encoding: Tao1NDIEncoding | undefined
+	encodingQuality: number | undefined
 }
 
 class Tao1NDIStatus {
@@ -127,6 +137,7 @@ class Tao1NDIStatus {
 }
 
 class Tao1ConnectionStatus {
+	connected: true | false | undefined
 	netmaskHex: string | undefined
 	ipHex: string | undefined
 	gatewayHex: string | undefined
