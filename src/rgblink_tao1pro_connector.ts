@@ -54,6 +54,19 @@ export const NDI_CONNECTION_MODE_UNICAST = 0
 export const NDI_CONNECTION_MODE_MULTICAST = 1
 export type Tao1NDIConnectionMode = 0 | 1
 
+export const BATTERY_STATUS_0_NOT_PLUGEED = 0
+export const BATTERY_STATUS_1_OF_5 = 1
+export const BATTERY_STATUS_2_OF_5 = 2
+export const BATTERY_STATUS_3_OF_5 = 3
+export const BATTERY_STATUS_4_OF_5 = 4
+export const BATTERY_STATUS_5_OF_5 = 5
+export type Tao1BatteryStatus = 0 | 1 | 2 | 3 | 4 | 5
+
+export const INPUT_AUDIO_ANALOG = 0
+export const INPUT_AUDIO_HDMI1 = 1
+export const INPUT_AUDIO_HDMI2 = 2
+export type Tao1AudioInput = 0 | 1 | 2
+
 const pollingCommands: PollingCommand[] = [
 	new PollingCommand('78', '02', '00', '00', '00'), // 3.2.20 Read the master and secondary channel
 ]
@@ -85,6 +98,7 @@ class Tao1BluetoothSingleDeviceStatus {
 class Tao1BluetoothStatus {
 	numOfDevices: number | undefined
 	devices: Tao1BluetoothSingleDeviceStatus[] = []
+	enabled: true | false | undefined
 }
 
 class Tao1NDIConnectionStatus {
@@ -104,6 +118,7 @@ class Tao1NDIEncodingSettings {
 }
 
 class Tao1NDIStatus {
+	switchNDIEnabled: true | false | undefined
 	groupName: string | undefined
 	channelName: string | undefined
 	deviceName: string | undefined
@@ -118,6 +133,18 @@ class Tao1ConnectionStatus {
 	macHex: string | undefined
 }
 
+class Tao1RecordingStatus {
+	fileName: string | undefined
+	isEnabled: true | false | undefined
+}
+
+class Tao1Firmware {
+	softwareMajor: string | undefined
+	softwareMinor: string | undefined
+	kernelMajor: string | undefined
+	kernelMinor: string | undefined
+}
+
 class Tao1DeviceStatus {
 	constructor() {
 		this.inputs[SRC_HDMI1] = new Tao1InputStatus()
@@ -130,11 +157,17 @@ class Tao1DeviceStatus {
 	programSourceMainChannel: number | undefined
 	programSourceSubChannel: number | undefined
 	diagram: Tao1Diagram = new Tao1Diagram()
+	recordingStatus: Tao1RecordingStatus = new Tao1RecordingStatus()
 	inputs: Tao1InputStatus[] = []
-	recordingFileName: string | undefined
 	bluetooth: Tao1BluetoothStatus = new Tao1BluetoothStatus()
 	ndi: Tao1NDIStatus = new Tao1NDIStatus()
 	networkStatus: Tao1ConnectionStatus = new Tao1ConnectionStatus()
+	uDiskInserted: true | false | undefined
+	batteries: Tao1BatteryStatus[] = []
+	powerSupplyByUSBc: true | false | undefined
+	pushStatusHex: string | undefined
+	audio: Tao1AudioInput | undefined
+	firmware: Tao1Firmware = new Tao1Firmware()
 }
 
 export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {

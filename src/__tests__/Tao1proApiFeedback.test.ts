@@ -1,5 +1,10 @@
 import {
+	BATTERY_STATUS_0_NOT_PLUGEED,
+	BATTERY_STATUS_5_OF_5,
 	BLUETOOTH_STATUS_0_,
+	INPUT_AUDIO_ANALOG,
+	INPUT_AUDIO_HDMI1,
+	INPUT_AUDIO_HDMI2,
 	INPUT_TYPE_H264,
 	INPUT_TYPE_MJPEG,
 	INPUT_TYPE_RAW_VIDEO,
@@ -89,7 +94,7 @@ test('API properly reads feedback 3.2.5 Read the file name being recorded (0xF1 
 		)
 	)
 	await new Promise((r) => setTimeout(r, 1))
-	expect(api.deviceStatus.recordingFileName).toEqual('/media/usb0/record_20130118095745.mp4')
+	expect(api.deviceStatus.recordingStatus.fileName).toEqual('/media/usb0/record_20130118095745.mp4')
 })
 
 test('API properly reads feedback 3.2.6 Bluetooth access to scanning device information (0xF1 0xB4)', async () => {
@@ -268,6 +273,7 @@ test('API properly reads feedback 3.2.19 Switch over the pgm screen input source
 // "Also for the PIP built problems, as we checked Tao1 pro does not support PIP module for new versions"
 // so following are not implemented in tests
 // 3.2.20 Read the master and secondary channel
+// 3.2.30 Display mode
 
 test('API properly reads feedback 3.2.21 Read the subnet mask', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
@@ -293,11 +299,159 @@ test('API properly reads feedback 3.2.23 Read the gateway', async () => {
 	expect(api.deviceStatus.networkStatus.gatewayHex).toEqual('C0A80001')
 })
 
-test('API properly reads feedback 3.2.24 Read Ethernet MAC Address Top 3 B A T E:  &  3.2.25 After reading the Ethernet MAC address, 3 B A T E:', async () => {
+test('API properly reads feedback 3.2.24 Read Ethernet MAC Address Top 3 B A T E  &  3.2.25 After reading the Ethernet MAC address, 3 B A T E', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
 	api.onDataReceived(Buffer.from('<F0000' + '8E' + '21' + 'A8' + '00' + '01' + '58>'))
 	api.onDataReceived(Buffer.from('<F0000' + '8E' + '23' + 'EE' + 'EF' + '02' + '90>'))
 	await new Promise((r) => setTimeout(r, 1))
-	expect(api.deviceStatus.networkStatus.gatewayHex).toEqual('A80001EEEF02')
+	expect(api.deviceStatus.networkStatus.macHex).toEqual('A80001EEEF02')
+})
+
+test('API properly reads feedback 3.2.26 U disk insertion status', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '68' + 'AD' + '00' + '00' + '00' + '15>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.uDiskInserted).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + '68' + 'AD' + '01' + '00' + '00' + '15>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.uDiskInserted).toEqual(true)
+})
+
+test('API properly reads feedback 3.2.27 Read the battery power', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '68' + 'B0' + '00' + '00' + '00' + '18>'))
+	api.onDataReceived(Buffer.from('<F0000' + '68' + 'B0' + '01' + '05' + '00' + '1E>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.batteries[0]).toEqual(BATTERY_STATUS_0_NOT_PLUGEED)
+	expect(api.deviceStatus.batteries[1]).toEqual(BATTERY_STATUS_5_OF_5)
+})
+
+test('API properly reads feedback 3.2.28 Read power supply (type-c) is inserted', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C1' + '00' + '00' + '00' + '00' + 'C1>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.powerSupplyByUSBc).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C1' + '01' + '00' + '00' + '00' + 'C2>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.powerSupplyByUSBc).toEqual(true)
+})
+
+test('API properly reads feedback 3.2.29 Read whether each push platform is normal', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '68' + 'B5' + '03' + '00' + '00' + '20>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.pushStatusHex).toEqual('03')
+})
+
+test('API properly reads feedback 3.2.31 Video recording', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C2' + '00' + '00' + '00' + '00' + 'C2>'))
+	await new Promise((r) => setTimeout(r, 1))
+	// what should be testet?
+	fail()
+})
+
+test('API properly reads feedback 3.2.32 Read the recording status', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C2' + '01' + '03' + '00' + '00' + 'C2>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.recordingStatus.isEnabled).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C2' + '01' + '03' + '01' + '00' + 'C2>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.recordingStatus.isEnabled).toEqual(true)
+})
+
+test('API properly reads feedback 3.2.33 Audio switching', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C3' + '00' + '00' + '00' + '00' + 'C3>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.audio).toEqual(INPUT_AUDIO_ANALOG)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C3' + '01' + '00' + '00' + '00' + 'C4>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.audio).toEqual(INPUT_AUDIO_HDMI1)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C3' + '02' + '00' + '00' + '00' + 'C5>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.audio).toEqual(INPUT_AUDIO_HDMI2)
+})
+
+test('API properly reads feedback 3.2.34 Read the application software version number', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '6A' + '00' + '03' + '21' + '00' + '8E>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.firmware.softwareMajor).toEqual('3')
+	expect(api.deviceStatus.firmware.softwareMajor).toEqual('33')
+})
+
+test('API properly reads feedback 3.2.35 Read the kernel software version number', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '6A' + '01' + '04' + '22' + '00' + '91>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.firmware.softwareMajor).toEqual('4')
+	expect(api.deviceStatus.firmware.softwareMajor).toEqual('34')
+})
+
+// 3.2.36. Return to the factory settings:
+// not planned
+
+// 3.2.37 Shutdown:
+// probably no feedback
+
+test('API properly reads feedback 3.2.38 Turn on the Bluetooth  &  3.2.39 Turn off the Bluetooth', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C5' + '01' + '00' + '00' + '00' + 'C6>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.bluetooth.enabled).toEqual(true)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C5' + '02' + '00' + '00' + '00' + 'C7>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.bluetooth.enabled).toEqual(false)
+})
+
+test('API properly reads feedback 3.2.40 Bluetooth Start scanning &&  3.2.41 Bluetooth End scan', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C5' + '03' + '00' + '00' + '00' + 'C8>'))
+	await new Promise((r) => setTimeout(r, 1))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C5' + '04' + '00' + '00' + '00' + 'C9>'))
+	await new Promise((r) => setTimeout(r, 1))
+
+	// what should be testes?
+	fail()
+})
+
+test('API properly reads feedback 3.2.42 NDI switch', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '00' + '00' + '00' + '00' + 'C6>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.switchNDIEnabled).toEqual(true)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '00' + '01' + '00' + '00' + 'C7>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.switchNDIEnabled).toEqual(false)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '01' + '00' + '00' + '00' + 'C7>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.switchNDIEnabled).toEqual(true)
+
+	api.onDataReceived(Buffer.from('<F0000' + 'C6' + '01' + '01' + '00' + '00' + 'C8>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.ndi.switchNDIEnabled).toEqual(false)
 })
