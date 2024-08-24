@@ -31,7 +31,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Status polling (ask for status every second)',
 			id: 'polling',
 			width: 12,
-			default: true,
+			default: false,
 		},
 		{
 			type: 'checkbox',

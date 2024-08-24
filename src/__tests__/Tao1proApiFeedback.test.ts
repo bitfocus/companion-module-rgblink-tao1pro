@@ -45,7 +45,7 @@ afterEach(() => {
 
 // The TAO1PRO central control protocol CMD uses 0xf0 (write) and 0 x f) to represent the 0xf1 (read) of long commands;
 
-test('API properly reads feedback 3.2.1 Read the HDMI and UVC Wide and Higher Information (0xF1 0xB3)', async () => {
+test('API properly reads feedback 3.2.1 Read HDMI and UVC width and height', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
 	api.onDataReceived(Buffer.from('<F004B' + 'F1' + 'B3' + '01' + '0700' + 'F7>01 80 07 38 04 3c 00'))

@@ -1,4 +1,5 @@
 import { RGBLinkApiConnector, ApiConfig, PollingCommand, Hex } from 'companion-rgblink-openapi-connector'
+import { ApiMessage, FeedbackRegistry as FeedbackConsumerRegistry, FeedbackResult } from './feedback-register.js'
 
 export const SRC_HDMI1 = 0 as const
 export const SRC_HDMI2 = 1
@@ -186,10 +187,12 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 
 	deviceStatus = new Tao1DeviceStatus()
 
+	private feedbackConsumers: FeedbackConsumerRegistry = new FeedbackConsumerRegistry()
+
 	constructor(config: ApiConfig) {
 		super(config, pollingCommands)
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
-		const self = this
+
+		this.registerFeedbackConsumers()
 
 		this.on(RGBLinkTAO1ProConnector.EVENT_NAME_ON_DATA_API_NOT_STANDARD_LENGTH, (message: string /*, metadata*/) => {
 			this.myDebug('Not standard data:' + message)
@@ -204,7 +207,18 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		this.on(
 			RGBLinkTAO1ProConnector.EVENT_NAME_ON_DATA_API,
 			(ADDR: Hex, SN: Hex, CMD: Hex, DAT1: Hex, DAT2: Hex, DAT3: Hex, DAT4: Hex) => {
-				self.consumeFeedback(ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4)
+				const redeableMsg = [ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4].join(' ')
+				const consumingResult: FeedbackResult = this.feedbackConsumers.handleFeedback(
+					new ApiMessage(ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4, [])
+				)
+				if (consumingResult !== undefined && consumingResult.consumed) {
+					if (consumingResult.isValid) {
+						this.emit(RGBLinkApiConnector.EVENT_NAME_ON_CONNECTION_OK, [])
+					}
+					this.logFeedback(redeableMsg, consumingResult.message)
+				} else {
+					this.myDebug('Unrecognized feedback message:' + redeableMsg)
+				}
 				this.emit(RGBLinkTAO1ProConnector.EVENT_NAME_ON_DEVICE_STATE_CHANGED, undefined)
 			}
 		)
@@ -262,67 +276,86 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		return position in DIAGRAM_POSITION_NAMES
 	}
 
-	private consumeFeedback(ADDR: Hex, SN: Hex, CMD: Hex, DAT1: Hex, DAT2: Hex, DAT3: Hex, DAT4: Hex): void {
-		const redeableMsg = [ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4].join(' ')
-
-		try {
-			if (CMD == '78') {
-				if (DAT1 == '00') {
-					// 3.2.18 Switch over the pvw screen input source
-					const src = parseInt(DAT2)
+	private registerFeedbackConsumers() {
+		// 3.2.18
+		this.feedbackConsumers.registerConsumer(
+			{ CMD: ['78'], DAT1: ['00'] },
+			{
+				handle: (msg: ApiMessage): FeedbackResult | undefined => {
+					const src = parseInt(msg.DAT2)
 					if (this.isValidSource(src)) {
-						this.emitConnectionStatusOK()
 						this.deviceStatus.previewSourceMainChannel = src
-						this.logFeedback(
-							redeableMsg,
-							`Switch over the preview screen to input source ${SRC_NAMES[this.deviceStatus.previewSourceMainChannel]}`
-						)
-						return
+						return {
+							consumed: true,
+							isValid: true,
+							message: `Switch over the preview screen to input source ${SRC_NAMES[src]}`,
+						}
+					} else {
+						return {
+							consumed: true,
+							isValid: false,
+							message: `Invalid source ${src}`,
+						}
 					}
-				} else if (DAT1 == '01') {
-					// 3.2.19 Switch over the pgm screen input source
-					const src = parseInt(DAT2)
+				},
+			}
+		)
+
+		// 3.2.19
+		this.feedbackConsumers.registerConsumer(
+			{ CMD: ['78'], DAT1: ['01'] },
+			{
+				handle: (msg: ApiMessage): FeedbackResult | undefined => {
+					const src = parseInt(msg.DAT2)
 					if (this.isValidSource(src)) {
-						this.emitConnectionStatusOK()
 						this.deviceStatus.programSourceMainChannel = src
-						this.logFeedback(
-							redeableMsg,
-							`Switch over the program screen to input source ${SRC_NAMES[this.deviceStatus.programSourceMainChannel]}`
-						)
-						return
+						return {
+							consumed: true,
+							isValid: true,
+							message: `Switch over the program screen to input source ${SRC_NAMES[src]}`,
+						}
+					} else {
+						return {
+							consumed: true,
+							isValid: false,
+							message: `Invalid source ${src}`,
+						}
 					}
-				}
-			} else if (CMD == 'C7') {
-				if (DAT1 == '00' || DAT1 == '01') {
-					// 3.2.44 Waveform diagram, vector diagram, and histogram:
-					const type = parseInt(DAT2)
-					const visibility = parseInt(DAT3)
-					const position = parseInt(DAT4)
+					return undefined
+				},
+			}
+		)
+
+		// 3.2.44 Waveform diagram, vector diagram, and histogram:
+		this.feedbackConsumers.registerConsumer(
+			{ CMD: ['C7'], DAT1: ['00', '01'] },
+			{
+				handle: (msg: ApiMessage): FeedbackResult | undefined => {
+					const type = parseInt(msg.DAT2)
+					const visibility = parseInt(msg.DAT3)
+					const position = parseInt(msg.DAT4)
 					if (
 						this.isDiagramTypeValid(type) &&
 						this.isDiagramVisibilityValid(visibility) &&
 						this.isDiagramPositionValid(position)
 					) {
-						this.emitConnectionStatusOK()
 						this.deviceStatus.diagram.type = type
 						this.deviceStatus.diagram.visibility = visibility
 						this.deviceStatus.diagram.position = position
-						this.logFeedback(
-							redeableMsg,
-							`Diagram visibility: ${DIAGRAM_VISIBILITY_NAMES[visibility]}, type: ${DIAGRAM_TYPE_NAMES[type]}, position: ${DIAGRAM_POSITION_NAMES[position]}`
-						)
-						return
+						return {
+							consumed: true,
+							isValid: true,
+							message: `Diagram visibility: ${DIAGRAM_VISIBILITY_NAMES[visibility]}, type: ${DIAGRAM_TYPE_NAMES[type]}, position: ${DIAGRAM_POSITION_NAMES[position]}`,
+						}
+					} else {
+						return {
+							consumed: true,
+							isValid: false,
+							message: `Invalid params visibility:${visibility}, type:${type}, position:${position}`,
+						}
 					}
-				}
+				},
 			}
-		} catch (ex) {
-			console.log(ex)
-		}
-
-		this.myDebug('Unrecognized feedback message:' + redeableMsg)
-	}
-
-	private emitConnectionStatusOK() {
-		this.emit(RGBLinkApiConnector.EVENT_NAME_ON_CONNECTION_OK, [])
+		)
 	}
 }
