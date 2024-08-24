@@ -111,6 +111,13 @@ class Tao1NDIStatus {
 	encodingSettings: Tao1NDIEncodingSettings = new Tao1NDIEncodingSettings()
 }
 
+class Tao1ConnectionStatus {
+	netmaskHex: string | undefined
+	ipHex: string | undefined
+	gatewayHex: string | undefined
+	macHex: string | undefined
+}
+
 class Tao1DeviceStatus {
 	constructor() {
 		this.inputs[SRC_HDMI1] = new Tao1InputStatus()
@@ -127,6 +134,7 @@ class Tao1DeviceStatus {
 	recordingFileName: string | undefined
 	bluetooth: Tao1BluetoothStatus = new Tao1BluetoothStatus()
 	ndi: Tao1NDIStatus = new Tao1NDIStatus()
+	networkStatus: Tao1ConnectionStatus = new Tao1ConnectionStatus()
 }
 
 export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {

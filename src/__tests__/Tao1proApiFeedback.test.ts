@@ -263,3 +263,41 @@ test('API properly reads feedback 3.2.19 Switch over the pgm screen input source
 	await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.programSourceMainChannel).toEqual(SRC_UVC2)
 })
+
+// From support e-mail:
+// "Also for the PIP built problems, as we checked Tao1 pro does not support PIP module for new versions"
+// so following are not implemented in tests
+// 3.2.20 Read the master and secondary channel
+
+test('API properly reads feedback 3.2.21 Read the subnet mask', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '85' + 'FF' + 'FF' + 'FF' + '00' + '82>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.networkStatus.netmaskHex).toEqual('FFFFFF00')
+})
+
+test('API properly reads feedback 3.2.22 Read the IP address', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '89' + 'C0' + 'A8' + '00' + '01' + 'F2>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.networkStatus.ipHex).toEqual('C0A80001')
+})
+
+test('API properly reads feedback 3.2.23 Read the gateway', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '82' + 'C0' + 'A8' + '00' + '01' + 'EB>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.networkStatus.gatewayHex).toEqual('C0A80001')
+})
+
+test('API properly reads feedback 3.2.24 Read Ethernet MAC Address Top 3 B A T E:  &  3.2.25 After reading the Ethernet MAC address, 3 B A T E:', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0000' + '8E' + '21' + 'A8' + '00' + '01' + '58>'))
+	api.onDataReceived(Buffer.from('<F0000' + '8E' + '23' + 'EE' + 'EF' + '02' + '90>'))
+	await new Promise((r) => setTimeout(r, 1))
+	expect(api.deviceStatus.networkStatus.gatewayHex).toEqual('A80001EEEF02')
+})
