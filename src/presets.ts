@@ -2,6 +2,7 @@ import { CompanionButtonPresetDefinition, CompanionPresetDefinitions } from '@co
 import {
 	ACTION_DIAGRAM_HIDE,
 	ACTION_DIAGRAM_SHOW,
+	ACTION_READ_INPUT_TYPE,
 	ACTION_SWITCH_PREVIEW,
 	ACTION_SWITCH_PROGRAM,
 	BACKGROUND_COLOR_DEFAULT,
@@ -170,6 +171,36 @@ export function UpdatePresetsDefinitions(self: Tao1ProInstance): void {
 				],
 			})
 		}
+	}
+
+	// Test/debug read only
+	const debugCategory = 'DEBUG & TEST'
+	for (let id = 0; id < SRC_NAMES.length; id++) {
+		presets.push({
+			type: 'button',
+			category: debugCategory,
+			name: 'Read\\n' + SRC_NAMES[id] + '\\nsize/Hz/type',
+			style: {
+				text: 'Read\\n' + SRC_NAMES[id] + '\\nsize/Hz/type',
+				size: 'auto',
+				color: TEXT_COLOR,
+				bgcolor: BACKGROUND_COLOR_DEFAULT,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: ACTION_READ_INPUT_TYPE,
+							options: {
+								source: id,
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		})
 	}
 
 	const def: CompanionPresetDefinitions = {}

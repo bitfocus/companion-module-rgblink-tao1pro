@@ -10,6 +10,7 @@ import {
 import {
 	ACTION_DIAGRAM_HIDE,
 	ACTION_DIAGRAM_SHOW,
+	ACTION_READ_INPUT_TYPE,
 	ACTION_SWITCH_PREVIEW,
 	ACTION_SWITCH_PROGRAM,
 	CHOICES_PART_DIAGRAM_POSITION,
@@ -96,6 +97,24 @@ export function UpdateActions(self: Tao1ProInstance): void {
 				action.options.type as number,
 				action.options.position as number
 			)
+		},
+	}
+
+	actions[ACTION_READ_INPUT_TYPE] = {
+		name: 'Read input width/height/frequency/type',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Source signal',
+				id: 'source',
+				default: SRC_HDMI1,
+				tooltip: 'Choose input source signal',
+				choices: CHOICES_PART_SOURCES,
+				minChoicesForSearch: 0,
+			},
+		],
+		callback: async (action /* , bank*/) => {
+			self.apiConnector.sendReadInputWidthHeight(action.options.source as number)
 		},
 	}
 

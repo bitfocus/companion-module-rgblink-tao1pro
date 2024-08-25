@@ -8,6 +8,7 @@ export const ACTION_SWITCH_PREVIEW = 'switch_preview'
 export const ACTION_SWITCH_PROGRAM = 'switch_program'
 export const ACTION_DIAGRAM_HIDE = 'diagram_hide'
 export const ACTION_DIAGRAM_SHOW = 'diagram_show'
+export const ACTION_READ_INPUT_TYPE = 'input_read'
 
 export const FEEDBACK_PREVIEW_SRC = 'feedback_preview'
 export const FEEDBACK_PROGRAM_SRC = 'feedback_program'

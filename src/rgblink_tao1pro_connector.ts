@@ -45,6 +45,10 @@ export const INPUT_TYPE_MJPEG = 0
 export const INPUT_TYPE_RAW_VIDEO = 1
 export const INPUT_TYPE_H264 = 2
 export type Tao1InputType = 0 | 1 | 2
+export const INPUT_TYPE_NAMES: string[] = []
+INPUT_TYPE_NAMES[INPUT_TYPE_MJPEG] = 'MJPEG'
+INPUT_TYPE_NAMES[INPUT_TYPE_RAW_VIDEO] = 'RAW video'
+INPUT_TYPE_NAMES[INPUT_TYPE_H264] = 'H.264'
 
 export const BLUETOOTH_STATUS_0_ = 0
 export const BLUETOOTH_STATUS_1_PAIRED = 1
@@ -157,12 +161,12 @@ class Tao1Firmware {
 	kernelMinor: string | undefined
 }
 
-class Tao1DeviceStatus {
+export class Tao1DeviceStatus {
 	constructor() {
 		this.inputs[SRC_HDMI1] = new Tao1InputStatus()
 		this.inputs[SRC_HDMI2] = new Tao1InputStatus()
 		this.inputs[SRC_UVC1] = new Tao1InputStatus()
-		this.inputs[SRC_UVC1] = new Tao1InputStatus()
+		this.inputs[SRC_UVC2] = new Tao1InputStatus()
 	}
 
 	previewSourceMainChannel: number | undefined
@@ -187,8 +191,17 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 
 	constructor(config: ApiConfig) {
 		super(config, pollingCommands)
-
+		this.enableDataBlock()
 		this.registerFeedbackConsumers()
+	}
+
+	// 3.2.1
+	public sendReadInputWidthHeight(src: number): void {
+		if (this.isValidSource(src)) {
+			this.sendCommand('F1', 'B3', this.byteToTwoSignHex(src), '00', '00')
+		} else {
+			this.myDebug('Wrong source number: ' + src)
+		}
 	}
 
 	public sendSwitchPreview(src: number): void {
@@ -244,12 +257,43 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 	}
 
 	private registerFeedbackConsumers(): void {
+		// 3.2.1
+		this.registerConsumer(
+			{ CMD: ['F0', 'F1'], DAT1: ['B3'] },
+			{
+				handle: (msg: ApiMessage): FeedbackResult | undefined => {
+					const src = this.hexToNumber(msg.DAT2)
+					if (this.isValidSource(src) && msg.dataBlock !== undefined) {
+						const type = this.hexToNumber(msg.dataBlock[0]) as Tao1InputType
+						const width = this.hexToNumber(msg.dataBlock[1]) + this.hexToNumber(msg.dataBlock[2]) * 256
+						const height = this.hexToNumber(msg.dataBlock[3]) + this.hexToNumber(msg.dataBlock[4]) * 256
+						const frequency = this.hexToNumber(msg.dataBlock[5])
+						this.deviceStatus.inputs[src].type = type
+						this.deviceStatus.inputs[src].width = width
+						this.deviceStatus.inputs[src].height = height
+						this.deviceStatus.inputs[src].frequency = frequency
+						return {
+							consumed: true,
+							isValid: true,
+							message: `Input ${SRC_NAMES[src]} as ${INPUT_TYPE_NAMES[type]} is ${width}x${height}x${frequency}Hz`,
+						}
+					} else {
+						return {
+							consumed: true,
+							isValid: false,
+							message: `Invalid source ${src} or invalid extraData`,
+						}
+					}
+				},
+			}
+		)
+
 		// 3.2.18
 		this.registerConsumer(
 			{ CMD: ['78'], DAT1: ['00'] },
 			{
 				handle: (msg: ApiMessage): FeedbackResult | undefined => {
-					const src = parseInt(msg.DAT2)
+					const src = this.hexToNumber(msg.DAT2)
 					if (this.isValidSource(src)) {
 						this.deviceStatus.previewSourceMainChannel = src
 						return {
@@ -273,7 +317,7 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 			{ CMD: ['78'], DAT1: ['01'] },
 			{
 				handle: (msg: ApiMessage): FeedbackResult | undefined => {
-					const src = parseInt(msg.DAT2)
+					const src = this.hexToNumber(msg.DAT2)
 					if (this.isValidSource(src)) {
 						this.deviceStatus.programSourceMainChannel = src
 						return {
@@ -298,9 +342,9 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 			{ CMD: ['C7'], DAT1: ['00', '01'] },
 			{
 				handle: (msg: ApiMessage): FeedbackResult | undefined => {
-					const type = parseInt(msg.DAT2)
-					const visibility = parseInt(msg.DAT3)
-					const position = parseInt(msg.DAT4)
+					const type = this.hexToNumber(msg.DAT2)
+					const visibility = this.hexToNumber(msg.DAT3)
+					const position = this.hexToNumber(msg.DAT4)
 					if (
 						this.isDiagramTypeValid(type) &&
 						this.isDiagramVisibilityValid(visibility) &&

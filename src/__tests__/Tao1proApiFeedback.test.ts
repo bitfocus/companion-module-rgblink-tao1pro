@@ -62,14 +62,14 @@ test('API properly reads feedback 3.2.1 Read HDMI and UVC width and height', asy
 	expect(api.deviceStatus.inputs[SRC_HDMI1].height).toEqual(768)
 	expect(api.deviceStatus.inputs[SRC_HDMI1].frequency).toEqual(50)
 
-	api.onDataReceived(Buffer.from('<F0000' + 'F1' + 'B3' + '02' + '0700' + 'AD>02 58 05 00 03 19 7B')) // h264 1366x768x25
+	api.onDataReceived(Buffer.from('<F0000' + 'F1' + 'B3' + '02' + '0700' + 'AD>02 56 05 00 03 19 79')) // h264 1366x768x25
 	await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.inputs[SRC_UVC1].type).toEqual(INPUT_TYPE_H264)
 	expect(api.deviceStatus.inputs[SRC_UVC1].width).toEqual(1366)
 	expect(api.deviceStatus.inputs[SRC_UVC1].height).toEqual(768)
 	expect(api.deviceStatus.inputs[SRC_UVC1].frequency).toEqual(25)
 
-	api.onDataReceived(Buffer.from('<F0000' + 'F1' + 'B3' + '03' + '0700' + 'AE>02 00 06 60 03 18 83')) // h264 1536x864x24
+	api.onDataReceived(Buffer.from('<F0000' + 'F1' + 'B3' + '03' + '0700' + 'AE>02 56 05 60 03 18 D8')) // h264 1536x864x24
 	await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.inputs[SRC_UVC2].type).toEqual(INPUT_TYPE_H264)
 	expect(api.deviceStatus.inputs[SRC_UVC2].width).toEqual(1366)
