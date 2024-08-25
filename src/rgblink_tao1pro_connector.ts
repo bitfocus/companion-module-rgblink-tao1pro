@@ -259,7 +259,7 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 	private registerFeedbackConsumers(): void {
 		// 3.2.1
 		this.registerConsumer(
-			{ CMD: ['F0', 'F1'], DAT1: ['B3'] },
+			{ CMD: ['F1'], DAT1: ['B3'] },
 			{
 				handle: (msg: ApiMessage): FeedbackResult | undefined => {
 					const src = this.hexToNumber(msg.DAT2)
