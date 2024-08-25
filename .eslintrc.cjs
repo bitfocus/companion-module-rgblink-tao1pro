@@ -10,5 +10,12 @@ module.exports = {
 				endOfLine: 'auto',
 			},
 		],
+		'n/no-extraneous-import': [
+			'warn',
+			{
+				allowModules: [],
+				resolvePaths: [],
+			},
+		],
 	},
 }

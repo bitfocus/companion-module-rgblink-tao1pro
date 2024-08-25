@@ -1,5 +1,5 @@
 // npm pack
-// npm install ..\..\..\..\companion-rgblink-openapi-connector\companion-rgblink-openapi-connector-2.1.0.tgz
+// npm install ..\..\..\..\companion-rgblink-openapi-connector\companion-rgblink-openapi-connector-2.1.1-SNAPSHOT.tgz
 
 // https://medium.com/@debshish.pal/publish-a-npm-package-locally-for-testing-9a00015eb9fd
 
@@ -61,7 +61,7 @@ export class Tao1ProInstance extends InstanceBase<ModuleConfig> {
 			)
 		)
 		this.apiConnector.enableLog(this)
-		this.apiConnector.on(RGBLinkTAO1ProConnector.EVENT_NAME_ON_DEVICE_STATE_CHANGED, () => {
+		this.apiConnector.on(RGBLinkApiConnector.EVENT_NAME_ON_DEVICE_STATE_CHANGED, () => {
 			self.checkAllFeedbacks()
 		})
 		this.apiConnector.on(RGBLinkApiConnector.EVENT_NAME_ON_CONNECTION_OK, () => {

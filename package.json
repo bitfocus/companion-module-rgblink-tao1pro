@@ -22,7 +22,7 @@
 	"homepage": "https://github.com/bitfocus/companion-module-rgblink-tao1pro",
 	"dependencies": {
 		"@companion-module/base": "~1.7.0",
-		"companion-rgblink-openapi-connector": "^2.1.0"
+		"ts-node": "10.9.2"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.25.2",

@@ -1,5 +1,5 @@
-import { RGBLinkApiConnector, ApiConfig, PollingCommand, Hex } from 'companion-rgblink-openapi-connector'
-import { ApiMessage, FeedbackRegistry as FeedbackConsumerRegistry, FeedbackResult } from './feedback-register.js'
+import { RGBLinkApiConnector, ApiConfig, PollingCommand, ApiMessage } from 'companion-rgblink-openapi-connector'
+import { FeedbackResult } from 'companion-rgblink-openapi-connector/dist/feedback-register.js'
 
 export const SRC_HDMI1 = 0 as const
 export const SRC_HDMI2 = 1
@@ -183,45 +183,12 @@ class Tao1DeviceStatus {
 }
 
 export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
-	static EVENT_NAME_ON_DEVICE_STATE_CHANGED = 'on_device_state_changed'
-
 	deviceStatus = new Tao1DeviceStatus()
-
-	private feedbackConsumers: FeedbackConsumerRegistry = new FeedbackConsumerRegistry()
 
 	constructor(config: ApiConfig) {
 		super(config, pollingCommands)
 
 		this.registerFeedbackConsumers()
-
-		this.on(RGBLinkTAO1ProConnector.EVENT_NAME_ON_DATA_API_NOT_STANDARD_LENGTH, (message: string /*, metadata*/) => {
-			this.myDebug('Not standard data:' + message)
-			// if (metadata.size == 22) {
-			// 	self.consume22(message)
-			// 	this.emit(this.EVENT_NAME_ON_DEVICE_STATE_CHANGED, [])
-			// } else {
-			// 	//self.status(this.STATUS_WARNING, "Unknown message length:" + metadata.size)
-			// }
-		})
-
-		this.on(
-			RGBLinkTAO1ProConnector.EVENT_NAME_ON_DATA_API,
-			(ADDR: Hex, SN: Hex, CMD: Hex, DAT1: Hex, DAT2: Hex, DAT3: Hex, DAT4: Hex) => {
-				const redeableMsg = [ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4].join(' ')
-				const consumingResult: FeedbackResult = this.feedbackConsumers.handleFeedback(
-					new ApiMessage(ADDR, SN, CMD, DAT1, DAT2, DAT3, DAT4, [])
-				)
-				if (consumingResult !== undefined && consumingResult.consumed) {
-					if (consumingResult.isValid) {
-						this.emit(RGBLinkApiConnector.EVENT_NAME_ON_CONNECTION_OK, [])
-					}
-					this.logFeedback(redeableMsg, consumingResult.message)
-				} else {
-					this.myDebug('Unrecognized feedback message:' + redeableMsg)
-				}
-				this.emit(RGBLinkTAO1ProConnector.EVENT_NAME_ON_DEVICE_STATE_CHANGED, undefined)
-			}
-		)
 	}
 
 	public sendSwitchPreview(src: number): void {
@@ -276,9 +243,9 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		return position in DIAGRAM_POSITION_NAMES
 	}
 
-	private registerFeedbackConsumers() {
+	private registerFeedbackConsumers(): void {
 		// 3.2.18
-		this.feedbackConsumers.registerConsumer(
+		this.registerConsumer(
 			{ CMD: ['78'], DAT1: ['00'] },
 			{
 				handle: (msg: ApiMessage): FeedbackResult | undefined => {
@@ -302,7 +269,7 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		)
 
 		// 3.2.19
-		this.feedbackConsumers.registerConsumer(
+		this.registerConsumer(
 			{ CMD: ['78'], DAT1: ['01'] },
 			{
 				handle: (msg: ApiMessage): FeedbackResult | undefined => {
@@ -327,7 +294,7 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		)
 
 		// 3.2.44 Waveform diagram, vector diagram, and histogram:
-		this.feedbackConsumers.registerConsumer(
+		this.registerConsumer(
 			{ CMD: ['C7'], DAT1: ['00', '01'] },
 			{
 				handle: (msg: ApiMessage): FeedbackResult | undefined => {
