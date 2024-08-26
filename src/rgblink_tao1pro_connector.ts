@@ -161,6 +161,12 @@ class Tao1Firmware {
 	kernelMinor: string | undefined
 }
 
+class Tao1PushStatus {
+	pushStatusHex: string | undefined
+	enabled: boolean | undefined
+	addresses: string | undefined
+}
+
 export class Tao1DeviceStatus {
 	constructor() {
 		this.inputs[SRC_HDMI1] = new Tao1InputStatus()
@@ -181,7 +187,7 @@ export class Tao1DeviceStatus {
 	uDiskInserted: true | false | undefined
 	batteries: Tao1BatteryStatus[] = []
 	powerSupplyByUSBc: true | false | undefined
-	pushStatusHex: string | undefined
+	push: Tao1PushStatus = new Tao1PushStatus()
 	audio: Tao1AudioInput | undefined
 	firmware: Tao1Firmware = new Tao1Firmware()
 }
@@ -202,6 +208,11 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 		} else {
 			this.myDebug('Wrong source number: ' + src)
 		}
+	}
+
+	// 3.2.3
+	public sendReadRTMPEnabledAndAddresses(): void {
+		this.sendCommand('F1', 'B4', '00', '00', '00')
 	}
 
 	public sendSwitchPreview(src: number): void {
@@ -263,7 +274,7 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 			{
 				handle: (msg: ApiMessage): FeedbackResult | undefined => {
 					const src = this.hexToNumber(msg.DAT2)
-					if (this.isValidSource(src) && msg.dataBlock !== undefined) {
+					if (this.isValidSource(src) && msg.dataBlock !== undefined && msg.dataBlock.length == 7) {
 						const type = this.hexToNumber(msg.dataBlock[0]) as Tao1InputType
 						const width = this.hexToNumber(msg.dataBlock[1]) + this.hexToNumber(msg.dataBlock[2]) * 256
 						const height = this.hexToNumber(msg.dataBlock[3]) + this.hexToNumber(msg.dataBlock[4]) * 256
@@ -283,6 +294,43 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 							isValid: false,
 							message: `Invalid source ${src} or invalid extraData`,
 						}
+					}
+				},
+			}
+		)
+
+		// 3.2.3
+		this.registerConsumer(
+			{ CMD: ['F1'], DAT1: ['B4'] },
+			{
+				handle: (msg: ApiMessage): FeedbackResult | undefined => {
+					const src = this.hexToNumber(msg.DAT2)
+					if (this.isValidSource(src) && msg.dataBlock !== undefined) {
+						if (msg.dataBlock[0] == '00' || msg.dataBlock[0] == '01') {
+							this.deviceStatus.push.enabled = !!this.hexToNumber(msg.dataBlock[0])
+							const hexToAsciiConvert = [...msg.dataBlock]
+							hexToAsciiConvert.pop()
+							hexToAsciiConvert.shift()
+							this.deviceStatus.push.addresses = this.dataBlockHelper.hexToAscii(hexToAsciiConvert)
+						}
+						const type = this.hexToNumber(msg.dataBlock[0]) as Tao1InputType
+						const width = this.hexToNumber(msg.dataBlock[1]) + this.hexToNumber(msg.dataBlock[2]) * 256
+						const height = this.hexToNumber(msg.dataBlock[3]) + this.hexToNumber(msg.dataBlock[4]) * 256
+						const frequency = this.hexToNumber(msg.dataBlock[5])
+						this.deviceStatus.inputs[src].type = type
+						this.deviceStatus.inputs[src].width = width
+						this.deviceStatus.inputs[src].height = height
+						this.deviceStatus.inputs[src].frequency = frequency
+						return {
+							consumed: true,
+							isValid: true,
+							message: `Input ${SRC_NAMES[src]} as ${INPUT_TYPE_NAMES[type]} is ${width}x${height}x${frequency}Hz`,
+						}
+					}
+					return {
+						consumed: true,
+						isValid: false,
+						message: `Invalid source ${src} or invalid extraData`,
 					}
 				},
 			}

@@ -3,6 +3,7 @@ import {
 	ACTION_DIAGRAM_HIDE,
 	ACTION_DIAGRAM_SHOW,
 	ACTION_READ_INPUT_TYPE,
+	ACTION_READ_RTMP_ENABLED_ADDRESSES,
 	ACTION_SWITCH_PREVIEW,
 	ACTION_SWITCH_PROGRAM,
 	BACKGROUND_COLOR_DEFAULT,
@@ -179,9 +180,9 @@ export function UpdatePresetsDefinitions(self: Tao1ProInstance): void {
 		presets.push({
 			type: 'button',
 			category: debugCategory,
-			name: 'Read\\n' + SRC_NAMES[id] + '\\nsize/Hz/type',
+			name: 'BETA 3.2.1 Read\\n' + SRC_NAMES[id] + '\\nsize/Hz/type',
 			style: {
-				text: 'Read\\n' + SRC_NAMES[id] + '\\nsize/Hz/type',
+				text: 'BETA 3.2.1 Read\\n' + SRC_NAMES[id] + '\\nsize/Hz/type',
 				size: 'auto',
 				color: TEXT_COLOR,
 				bgcolor: BACKGROUND_COLOR_DEFAULT,
@@ -202,6 +203,30 @@ export function UpdatePresetsDefinitions(self: Tao1ProInstance): void {
 			feedbacks: [],
 		})
 	}
+
+	presets.push({
+		type: 'button',
+		category: debugCategory,
+		name: 'EXPERIMENTAL 3.2.3 Read RTMP enabled and addresses',
+		style: {
+			text: 'EXPERIMENTAL 3.2.3 Read RTMP enabled and addresses',
+			size: 'auto',
+			color: TEXT_COLOR,
+			bgcolor: BACKGROUND_COLOR_DEFAULT,
+		},
+		steps: [
+			{
+				down: [
+					{
+						actionId: ACTION_READ_RTMP_ENABLED_ADDRESSES,
+						options: {},
+					},
+				],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	})
 
 	const def: CompanionPresetDefinitions = {}
 	for (let id = 0; id < presets.length; id++) {

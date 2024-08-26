@@ -25,5 +25,8 @@ export function UpdateVariableDefinitions(self: Tao1ProInstance): void {
 		{ variableId: 'inputs.3.height', name: 'Input SVC 2 - height' },
 		{ variableId: 'inputs.3.frequency', name: 'Input SVC 2 - frequency' },
 		{ variableId: 'inputs.3.connected', name: 'Input SVC 2 - is connected' },
+
+		{ variableId: 'push.enabled', name: 'Push - is enabled' },
+		{ variableId: 'push.addresses', name: 'Push - addresses' },
 	])
 }

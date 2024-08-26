@@ -11,6 +11,7 @@ import {
 	ACTION_DIAGRAM_HIDE,
 	ACTION_DIAGRAM_SHOW,
 	ACTION_READ_INPUT_TYPE,
+	ACTION_READ_RTMP_ENABLED_ADDRESSES,
 	ACTION_SWITCH_PREVIEW,
 	ACTION_SWITCH_PROGRAM,
 	CHOICES_PART_DIAGRAM_POSITION,
@@ -101,7 +102,7 @@ export function UpdateActions(self: Tao1ProInstance): void {
 	}
 
 	actions[ACTION_READ_INPUT_TYPE] = {
-		name: 'Read input width/height/frequency/type',
+		name: 'BETA 3.2.1 Read input width/height/frequency/type',
 		options: [
 			{
 				type: 'dropdown',
@@ -115,6 +116,14 @@ export function UpdateActions(self: Tao1ProInstance): void {
 		],
 		callback: async (action /* , bank*/) => {
 			self.apiConnector.sendReadInputWidthHeight(action.options.source as number)
+		},
+	}
+
+	actions[ACTION_READ_RTMP_ENABLED_ADDRESSES] = {
+		name: 'EXPERIMENTAL 3.2.3 Read RTMP enabled and addresses',
+		options: [],
+		callback: async (_action, _bank) => {
+			self.apiConnector.sendReadRTMPEnabledAndAddresses()
 		},
 	}
 

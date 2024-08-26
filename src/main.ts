@@ -105,6 +105,9 @@ export class Tao1ProInstance extends InstanceBase<ModuleConfig> {
 			newVariables[`inputs.${id}.connected`] = String(true || d.inputs[id].connected)
 		}
 
+		newVariables['push.enabled'] = String(d.push.enabled)
+		newVariables['push.addresses'] = String(d.push.addresses)
+
 		this.setVariableValues(newVariables)
 	}
 

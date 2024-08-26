@@ -49,28 +49,28 @@ test('API properly reads feedback 3.2.1 Read HDMI and UVC width and height', asy
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
 	api.onDataReceived(Buffer.from('<F004B' + 'F1' + 'B3' + '01' + '0700' + 'F7>01 80 07 38 04 3c 00'))
-	await new Promise((r) => setTimeout(r, 1))
+	// await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.inputs[SRC_HDMI2].type).toEqual(INPUT_TYPE_RAW_VIDEO)
 	expect(api.deviceStatus.inputs[SRC_HDMI2].width).toEqual(0x0780) // 1920
 	expect(api.deviceStatus.inputs[SRC_HDMI2].height).toEqual(0x0438) // 1080
 	expect(api.deviceStatus.inputs[SRC_HDMI2].frequency).toEqual(0x3c) // 60 [Hz]
 
 	api.onDataReceived(Buffer.from('<F0000' + 'F1' + 'B3' + '00' + '0700' + 'AB>00 00 04 00 03 32 39')) // mjpeg 1024x768x50
-	await new Promise((r) => setTimeout(r, 1))
+	// await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.inputs[SRC_HDMI1].type).toEqual(INPUT_TYPE_MJPEG)
 	expect(api.deviceStatus.inputs[SRC_HDMI1].width).toEqual(1024)
 	expect(api.deviceStatus.inputs[SRC_HDMI1].height).toEqual(768)
 	expect(api.deviceStatus.inputs[SRC_HDMI1].frequency).toEqual(50)
 
 	api.onDataReceived(Buffer.from('<F0000' + 'F1' + 'B3' + '02' + '0700' + 'AD>02 56 05 00 03 19 79')) // h264 1366x768x25
-	await new Promise((r) => setTimeout(r, 1))
+	// await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.inputs[SRC_UVC1].type).toEqual(INPUT_TYPE_H264)
 	expect(api.deviceStatus.inputs[SRC_UVC1].width).toEqual(1366)
 	expect(api.deviceStatus.inputs[SRC_UVC1].height).toEqual(768)
 	expect(api.deviceStatus.inputs[SRC_UVC1].frequency).toEqual(25)
 
 	api.onDataReceived(Buffer.from('<F0000' + 'F1' + 'B3' + '03' + '0700' + 'AE>02 56 05 60 03 18 D8')) // h264 1536x864x24
-	await new Promise((r) => setTimeout(r, 1))
+	// await new Promise((r) => setTimeout(r, 1))
 	expect(api.deviceStatus.inputs[SRC_UVC2].type).toEqual(INPUT_TYPE_H264)
 	expect(api.deviceStatus.inputs[SRC_UVC2].width).toEqual(1366)
 	expect(api.deviceStatus.inputs[SRC_UVC2].height).toEqual(864)
@@ -91,6 +91,26 @@ test('API properly reads feedback 3.2.3 Set up the rtmp push flow switch and url
 	// noting to check/write?
 	// is it real feedback for command <T0056f0b40021001b>00 22 72 74 6d 70 3a 2f 2f 31 39 32 2e 31 36 38 2e 30 2e 37 36 2f 6c 69 76 65 2f 74 65 73 74 22 cf    ???
 	fail()
+})
+
+test('API properly reads feedback 3.2.3 Read - guessing that it works, not descripted in official API', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+	api.onDataReceived(
+		Buffer.from(
+			'<F0056F1B40021001C>00 22 72 74 6d 70 3a 2f 2f 31 39 32 2e 31 36 38 2e 30 2e 37 36 2f 6c 69 76 65 2f 74 65 73 74 22 cf'
+		)
+	)
+	expect(api.deviceStatus.push.enabled).toEqual(false)
+	expect(api.deviceStatus.push.addresses).toEqual('"rtmp://192.168.0.76/live/test"')
+
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+	api.onDataReceived(
+		Buffer.from(
+			'<F0056F1B40021001C>01 22 72 74 6d 70 3a 2f 2f 31 39 32 2e 31 36 38 2e 30 2e 37 36 2f 6c 69 76 65 2f 74 65 73 74 22 D0'
+		)
+	)
+	expect(api.deviceStatus.push.enabled).toEqual(true)
+	expect(api.deviceStatus.push.addresses).toEqual('"rtmp://192.168.0.76/live/test"')
 })
 
 test('API properly reads feedback 3.2.4 Set the code rate (0xF0 0xB5)', async () => {
@@ -363,7 +383,7 @@ test('API properly reads feedback 3.2.29 Read whether each push platform is norm
 
 	api.onDataReceived(Buffer.from('<F0000' + '68' + 'B5' + '03' + '00' + '00' + '20>'))
 	await new Promise((r) => setTimeout(r, 1))
-	expect(api.deviceStatus.pushStatusHex).toEqual('03')
+	expect(api.deviceStatus.push.pushStatusHex).toEqual('03')
 })
 
 test('API properly reads feedback 3.2.31 Video recording', async () => {
@@ -582,7 +602,7 @@ test('API properly reads feedback 3.2.48 Push-current status', async () => {
 
 	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '04' + '01' + '04' + '00' + 'D9>'))
 	await new Promise((r) => setTimeout(r, 1))
-	expect(api.deviceStatus.pushStatusHex).toEqual('04')
+	expect(api.deviceStatus.push.pushStatusHex).toEqual('04')
 
 	api.onDataReceived(Buffer.from('<F0000' + 'D0' + '04' + '00' + '04' + '00' + 'D8>'))
 	await new Promise((r) => setTimeout(r, 1))
