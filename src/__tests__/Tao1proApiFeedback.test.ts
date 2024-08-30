@@ -53,6 +53,7 @@ afterEach(() => {
 
 // The TAO1PRO central control protocol CMD uses 0xf0 (write) and 0 x f) to represent the 0xf1 (read) of long commands;
 
+// HDMI with & height
 test('API properly reads feedback 3.2.1 Read HDMI and UVC width and height', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
@@ -93,14 +94,7 @@ test('API properly reads feedback 3.2.2 Setting Wide information for HDMI and UV
 	fail()
 })
 
-test('API properly reads feedback 3.2.3 Set up the rtmp push flow switch and url (0xF0 0xB4)', async () => {
-	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
-	api.onDataReceived(Buffer.from('<F0056F0B40021001B>'))
-	// noting to check/write?
-	// is it real feedback for command <T0056f0b40021001b>00 22 72 74 6d 70 3a 2f 2f 31 39 32 2e 31 36 38 2e 30 2e 37 36 2f 6c 69 76 65 2f 74 65 73 74 22 cf    ???
-	fail()
-})
-
+// Push enabled && addresses
 test('API properly reads feedback 3.2.3 Read - guessing that it works, not descripted in official API', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 	api.onDataReceived(
@@ -121,14 +115,15 @@ test('API properly reads feedback 3.2.3 Read - guessing that it works, not descr
 	expect(api.deviceStatus.push.addresses).toEqual('"rtmp://192.168.0.76/live/test"')
 })
 
-test('API properly reads feedback 3.2.4 Set the code rate (0xF0 0xB5)', async () => {
+test('API properly reads feedback 3.2.3 Set up the rtmp push flow switch and url (0xF0 0xB4)', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
-	api.onDataReceived(Buffer.from('<F0035f0b5000500df>'))
+	api.onDataReceived(Buffer.from('<F0056F0B40021001B>'))
 	// noting to check/write?
-	// is it real feedback for command <T0035f0b5000500df>00 18 70 17 9f    ???
+	// is it real feedback for command <T0056f0b40021001b>00 22 72 74 6d 70 3a 2f 2f 31 39 32 2e 31 36 38 2e 30 2e 37 36 2f 6c 69 76 65 2f 74 65 73 74 22 cf    ???
 	fail()
 })
 
+// Push encoding, resolution & bitrate
 test('API properly reads feedback 3.2.4 Read - guessing that it works, not descripted in official API', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
@@ -153,6 +148,15 @@ test('API properly reads feedback 3.2.4 Read - guessing that it works, not descr
 	expect(api.deviceStatus.push.bitrate).toEqual(0x1770)
 })
 
+test('API properly reads feedback 3.2.4 Set the code rate (0xF0 0xB5)', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+	api.onDataReceived(Buffer.from('<F0035f0b5000500df>'))
+	// noting to check/write?
+	// is it real feedback for command <T0035f0b5000500df>00 18 70 17 9f    ???
+	fail()
+})
+
+// Recording filename
 test('API properly reads feedback 3.2.5 Read the file name being recorded (0xF1 0x45)', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
@@ -162,9 +166,18 @@ test('API properly reads feedback 3.2.5 Read the file name being recorded (0xF1 
 		)
 	)
 	await new Promise((r) => setTimeout(r, 1))
-	expect(api.deviceStatus.recordingStatus.fileName).toEqual('/media/usb0/record_20130118095745.mp4')
+	expect(api.deviceStatus.recording.fileName).toEqual('/media/usb0/record_20130118095745.mp4')
 })
 
+test('API properly reads feedback 3.2.5 Write encodingfile name (guessing this works', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+	api.onDataReceived(Buffer.from('<F0035f04500260090>'))
+	// is it works?
+	// what to check?
+	fail()
+})
+
+//
 test('API properly reads feedback 3.2.6 Bluetooth access to scanning device information (0xF1 0xB4)', async () => {
 	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
 
@@ -432,11 +445,11 @@ test('API properly reads feedback 3.2.32 Read the recording status', async () =>
 
 	api.onDataReceived(Buffer.from('<F0000' + 'C2' + '01' + '03' + '00' + '00' + 'C2>'))
 	await new Promise((r) => setTimeout(r, 1))
-	expect(api.deviceStatus.recordingStatus.isEnabled).toEqual(false)
+	expect(api.deviceStatus.recording.enabled).toEqual(false)
 
 	api.onDataReceived(Buffer.from('<F0000' + 'C2' + '01' + '03' + '01' + '00' + 'C2>'))
 	await new Promise((r) => setTimeout(r, 1))
-	expect(api.deviceStatus.recordingStatus.isEnabled).toEqual(true)
+	expect(api.deviceStatus.recording.enabled).toEqual(true)
 })
 
 test('API properly reads feedback 3.2.33 Audio switching', async () => {

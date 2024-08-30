@@ -12,6 +12,7 @@ import {
 	ACTION_DIAGRAM_SHOW,
 	ACTION_READ_INPUT_TYPE,
 	ACTION_READ_PUSH_ROTATION_AND_RESOLUTION,
+	ACTION_READ_RECORDING_FILE_NAME,
 	ACTION_READ_RTMP_ENABLED_ADDRESSES,
 	ACTION_SWITCH_PREVIEW,
 	ACTION_SWITCH_PROGRAM,
@@ -133,6 +134,14 @@ export function UpdateActions(self: Tao1ProInstance): void {
 		options: [],
 		callback: async (_action, _bank) => {
 			self.apiConnector.sendReadPushRotationAndResolution()
+		},
+	}
+
+	actions[ACTION_READ_RECORDING_FILE_NAME] = {
+		name: 'BETA 3.2.5 Read the file name being recorded',
+		options: [],
+		callback: async (_action, _bank) => {
+			self.apiConnector.sendReadRecordingFileName()
 		},
 	}
 

@@ -39,6 +39,8 @@ export function UpdateVariableDefinitions(self: Tao1ProInstance): void {
 		{ variableId: 'push.rotation', name: '3.2.4 Push - rotation' },
 		{ variableId: 'push.resolution', name: '3.2.4 Push - resolution' },
 		{ variableId: 'push.bitrate', name: '3.2.4 Push - bitrate' },
+
+		{ variableId: 'recording.fileName', name: '3.2.5 Push - recording file name' },
 	])
 }
 
@@ -46,6 +48,7 @@ export function UpdateVariableValues(self: Tao1ProInstance): void {
 	const newVariables: Record<string, any> = {}
 	const d: Tao1DeviceStatus = self.apiConnector.deviceStatus
 
+	// 3.2.1 & 3.2.2
 	for (let id = 0; id < SRC_NAMES.length; id++) {
 		newVariables[`inputs.${id}.type`] =
 			d.inputs[id].type !== undefined ? INPUT_TYPE_NAMES[d.inputs[id].type as number] : 'undefined'
@@ -55,13 +58,18 @@ export function UpdateVariableValues(self: Tao1ProInstance): void {
 		newVariables[`inputs.${id}.connected`] = String(true || d.inputs[id].connected)
 	}
 
+	// 3.2.3
 	newVariables['push.enabled'] = String(d.push.enabled)
 	newVariables['push.addresses'] = String(d.push.addresses)
 
+	// 3.2.4.
 	newVariables['push.rotation'] = d.push.rotation !== undefined ? String(ROTATION_NAMES[d.push.rotation]) : 'undefined'
 	newVariables['push.resolution'] =
 		d.push.resolution !== undefined ? String(PUSH_RESOLUTION_NAMES[d.push.resolution]) : 'undefined'
 	newVariables['push.bitrate'] = d.push.bitrate !== undefined ? String(d.push.bitrate) : 'undefined'
+
+	// 3.2.5
+	newVariables['recording.fileName'] = String(d.recording.fileName)
 
 	self.setVariableValues(newVariables)
 }

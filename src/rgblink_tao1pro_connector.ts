@@ -200,7 +200,7 @@ class Tao1ConnectionStatus {
 
 class Tao1RecordingStatus {
 	fileName: string | undefined
-	isEnabled: true | false | undefined
+	enabled: true | false | undefined
 }
 
 class Tao1Firmware {
@@ -231,7 +231,7 @@ export class Tao1DeviceStatus {
 	programSourceMainChannel: number | undefined
 	programSourceSubChannel: number | undefined
 	diagram: Tao1Diagram = new Tao1Diagram()
-	recordingStatus: Tao1RecordingStatus = new Tao1RecordingStatus()
+	recording: Tao1RecordingStatus = new Tao1RecordingStatus()
 	inputs: Tao1InputStatus[] = []
 	bluetooth: Tao1BluetoothStatus = new Tao1BluetoothStatus()
 	ndi: Tao1NDIStatus = new Tao1NDIStatus()
@@ -270,6 +270,11 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 	// 3.2.4
 	public sendReadPushRotationAndResolution(): void {
 		this.sendCommand('F1', 'B5', '00', '00', '00')
+	}
+
+	// 3.2.5
+	public sendReadRecordingFileName(): void {
+		this.sendCommand('F1', '45', '00', '00', '00')
 	}
 
 	public sendSwitchPreview(src: number): void {
@@ -426,6 +431,30 @@ export class RGBLinkTAO1ProConnector extends RGBLinkApiConnector {
 								isValid: true,
 								message: `Push rotation ${ROTATION_NAMES[rotation]}, resolution ${PUSH_RESOLUTION_NAMES[resolution]}, bitrate ${bitrate}`,
 							}
+						}
+					}
+					return {
+						consumed: true,
+						isValid: false,
+						message: `Invalid data`,
+					}
+				},
+			}
+		)
+
+		// 3.2.5
+		this.registerConsumer(
+			{ CMD: ['F1'], DAT1: ['45'] },
+			{
+				handle: (msg: ApiMessage): FeedbackResult | undefined => {
+					if (msg.dataBlock !== undefined && msg.dataBlock.length > 1) {
+						const hexToAsciiConvert = [...msg.dataBlock]
+						hexToAsciiConvert.pop() // remove checksum
+						this.deviceStatus.recording.fileName = this.dataBlockHelper.hexToAscii(hexToAsciiConvert)
+						return {
+							consumed: true,
+							isValid: true,
+							message: `Recording file name ${this.deviceStatus.recording.fileName}`,
 						}
 					}
 					return {

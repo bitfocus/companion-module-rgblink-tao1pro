@@ -11,6 +11,7 @@ export const ACTION_DIAGRAM_SHOW = 'diagram_show'
 export const ACTION_READ_INPUT_TYPE = 'input_read'
 export const ACTION_READ_RTMP_ENABLED_ADDRESSES = 'rtmp_read_addresses'
 export const ACTION_READ_PUSH_ROTATION_AND_RESOLUTION = 'push_read_rotation_and_resolution'
+export const ACTION_READ_RECORDING_FILE_NAME = 'read_recording_file_name'
 
 export const FEEDBACK_PREVIEW_SRC = 'feedback_preview'
 export const FEEDBACK_PROGRAM_SRC = 'feedback_program'
