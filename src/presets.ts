@@ -3,6 +3,7 @@ import {
 	ACTION_DIAGRAM_HIDE,
 	ACTION_DIAGRAM_SHOW,
 	ACTION_READ_INPUT_TYPE,
+	ACTION_READ_PUSH_ROTATION_AND_RESOLUTION,
 	ACTION_READ_RTMP_ENABLED_ADDRESSES,
 	ACTION_SWITCH_PREVIEW,
 	ACTION_SWITCH_PROGRAM,
@@ -219,6 +220,30 @@ export function UpdatePresetsDefinitions(self: Tao1ProInstance): void {
 				down: [
 					{
 						actionId: ACTION_READ_RTMP_ENABLED_ADDRESSES,
+						options: {},
+					},
+				],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	})
+
+	presets.push({
+		type: 'button',
+		category: debugCategory,
+		name: 'EXPERIMENTAL 3.2.4 Read push rotation and resolution',
+		style: {
+			text: 'EXPERIMENTAL 3.2.4 Read push rotation and resolution',
+			size: 'auto',
+			color: TEXT_COLOR,
+			bgcolor: BACKGROUND_COLOR_DEFAULT,
+		},
+		steps: [
+			{
+				down: [
+					{
+						actionId: ACTION_READ_PUSH_ROTATION_AND_RESOLUTION,
 						options: {},
 					},
 				],

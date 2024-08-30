@@ -25,7 +25,15 @@ import {
 	NDI_ENCODING_1_YUV,
 	NDI_ENCODING_2_H265,
 	NDI_ENCODING_3_NV12,
+	PUSH_RESOLUTION_1280_720_30,
+	PUSH_RESOLUTION_1280_720_60,
+	PUSH_RESOLUTION_640_480_30,
+	PUSH_RESOLUTION_640_480_60,
 	RGBLinkTAO1ProConnector,
+	ROTATION_0,
+	ROTATION_180,
+	ROTATION_270,
+	ROTATION_90,
 	SRC_HDMI1,
 	SRC_HDMI2,
 	SRC_UVC1,
@@ -119,6 +127,30 @@ test('API properly reads feedback 3.2.4 Set the code rate (0xF0 0xB5)', async ()
 	// noting to check/write?
 	// is it real feedback for command <T0035f0b5000500df>00 18 70 17 9f    ???
 	fail()
+})
+
+test('API properly reads feedback 3.2.4 Read - guessing that it works, not descripted in official API', async () => {
+	api = new RGBLinkTAO1ProConnector(new ApiConfig('localhost', TEST_PORT, false, false))
+
+	api.onDataReceived(Buffer.from('<F0035F1B5000500E0>00 18 70 17 9f'))
+	expect(api.deviceStatus.push.rotation).toEqual(ROTATION_0)
+	expect(api.deviceStatus.push.resolution).toEqual(PUSH_RESOLUTION_640_480_30)
+	expect(api.deviceStatus.push.bitrate).toEqual(0x1770)
+
+	api.onDataReceived(Buffer.from('<F0035F1B5000500E0>01 17 70 17 9f'))
+	expect(api.deviceStatus.push.rotation).toEqual(ROTATION_90)
+	expect(api.deviceStatus.push.resolution).toEqual(PUSH_RESOLUTION_640_480_60)
+	expect(api.deviceStatus.push.bitrate).toEqual(0x1770)
+
+	api.onDataReceived(Buffer.from('<F0035F1B5000500E0>02 02 70 17 8B'))
+	expect(api.deviceStatus.push.rotation).toEqual(ROTATION_180)
+	expect(api.deviceStatus.push.resolution).toEqual(PUSH_RESOLUTION_1280_720_60)
+	expect(api.deviceStatus.push.bitrate).toEqual(0x1770)
+
+	api.onDataReceived(Buffer.from('<F0035F1B5000500E0>03 05 70 17 8F'))
+	expect(api.deviceStatus.push.rotation).toEqual(ROTATION_270)
+	expect(api.deviceStatus.push.resolution).toEqual(PUSH_RESOLUTION_1280_720_30)
+	expect(api.deviceStatus.push.bitrate).toEqual(0x1770)
 })
 
 test('API properly reads feedback 3.2.5 Read the file name being recorded (0xF1 0x45)', async () => {

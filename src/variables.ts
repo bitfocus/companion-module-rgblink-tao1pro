@@ -1,4 +1,11 @@
 import type { Tao1ProInstance } from './main.js'
+import {
+	INPUT_TYPE_NAMES,
+	PUSH_RESOLUTION_NAMES,
+	ROTATION_NAMES,
+	SRC_NAMES,
+	Tao1DeviceStatus,
+} from './rgblink_tao1pro_connector.js'
 
 export function UpdateVariableDefinitions(self: Tao1ProInstance): void {
 	self.setVariableDefinitions([
@@ -28,5 +35,33 @@ export function UpdateVariableDefinitions(self: Tao1ProInstance): void {
 
 		{ variableId: 'push.enabled', name: '3.2.3 Push - is enabled' },
 		{ variableId: 'push.addresses', name: '3.2.3 Push - addresses' },
+
+		{ variableId: 'push.rotation', name: '3.2.4 Push - rotation' },
+		{ variableId: 'push.resolution', name: '3.2.4 Push - resolution' },
+		{ variableId: 'push.bitrate', name: '3.2.4 Push - bitrate' },
 	])
+}
+
+export function UpdateVariableValues(self: Tao1ProInstance): void {
+	const newVariables: Record<string, any> = {}
+	const d: Tao1DeviceStatus = self.apiConnector.deviceStatus
+
+	for (let id = 0; id < SRC_NAMES.length; id++) {
+		newVariables[`inputs.${id}.type`] =
+			d.inputs[id].type !== undefined ? INPUT_TYPE_NAMES[d.inputs[id].type as number] : 'undefined'
+		newVariables[`inputs.${id}.width`] = String(d.inputs[id].width)
+		newVariables[`inputs.${id}.height`] = String(d.inputs[id].height)
+		newVariables[`inputs.${id}.frequency`] = String(d.inputs[id].frequency)
+		newVariables[`inputs.${id}.connected`] = String(true || d.inputs[id].connected)
+	}
+
+	newVariables['push.enabled'] = String(d.push.enabled)
+	newVariables['push.addresses'] = String(d.push.addresses)
+
+	newVariables['push.rotation'] = d.push.rotation !== undefined ? String(ROTATION_NAMES[d.push.rotation]) : 'undefined'
+	newVariables['push.resolution'] =
+		d.push.resolution !== undefined ? String(PUSH_RESOLUTION_NAMES[d.push.resolution]) : 'undefined'
+	newVariables['push.bitrate'] = d.push.bitrate !== undefined ? String(d.push.bitrate) : 'undefined'
+
+	self.setVariableValues(newVariables)
 }

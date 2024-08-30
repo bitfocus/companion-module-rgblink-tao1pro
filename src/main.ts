@@ -5,11 +5,11 @@
 
 import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
-import { UpdateVariableDefinitions } from './variables.js'
+import { UpdateVariableDefinitions, UpdateVariableValues } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { INPUT_TYPE_NAMES, RGBLinkTAO1ProConnector, SRC_NAMES, Tao1DeviceStatus } from './rgblink_tao1pro_connector.js'
+import { RGBLinkTAO1ProConnector } from './rgblink_tao1pro_connector.js'
 import { UpdatePresetsDefinitions } from './presets.js'
 import {
 	DEFAULT_1PRO_PORT,
@@ -93,22 +93,7 @@ export class Tao1ProInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	private updateVariableValues(): void {
-		const newVariables: Record<string, any> = {}
-		const d: Tao1DeviceStatus = this.apiConnector.deviceStatus
-		for (let id = 0; id < SRC_NAMES.length; id++) {
-			newVariables[`inputs.${id}.type`] = d.inputs[id].type
-				? INPUT_TYPE_NAMES[d.inputs[id].type as number]
-				: 'undefined'
-			newVariables[`inputs.${id}.width`] = String(d.inputs[id].width)
-			newVariables[`inputs.${id}.height`] = String(d.inputs[id].height)
-			newVariables[`inputs.${id}.frequency`] = String(d.inputs[id].frequency)
-			newVariables[`inputs.${id}.connected`] = String(true || d.inputs[id].connected)
-		}
-
-		newVariables['push.enabled'] = String(d.push.enabled)
-		newVariables['push.addresses'] = String(d.push.addresses)
-
-		this.setVariableValues(newVariables)
+		return UpdateVariableValues(this)
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {

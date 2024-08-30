@@ -11,6 +11,7 @@ import {
 	ACTION_DIAGRAM_HIDE,
 	ACTION_DIAGRAM_SHOW,
 	ACTION_READ_INPUT_TYPE,
+	ACTION_READ_PUSH_ROTATION_AND_RESOLUTION,
 	ACTION_READ_RTMP_ENABLED_ADDRESSES,
 	ACTION_SWITCH_PREVIEW,
 	ACTION_SWITCH_PROGRAM,
@@ -120,10 +121,18 @@ export function UpdateActions(self: Tao1ProInstance): void {
 	}
 
 	actions[ACTION_READ_RTMP_ENABLED_ADDRESSES] = {
-		name: 'EXPERIMENTAL 3.2.3 Read RTMP enabled and addresses',
+		name: 'EXPERIMENTAL 3.2.3 Read push RTMP enabled and addresses',
 		options: [],
 		callback: async (_action, _bank) => {
 			self.apiConnector.sendReadRTMPEnabledAndAddresses()
+		},
+	}
+
+	actions[ACTION_READ_PUSH_ROTATION_AND_RESOLUTION] = {
+		name: 'EXPERIMENTAL 3.2.4 Read push rotation and resolution',
+		options: [],
+		callback: async (_action, _bank) => {
+			self.apiConnector.sendReadPushRotationAndResolution()
 		},
 	}
 
